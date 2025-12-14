@@ -1,6 +1,6 @@
 name: fine_wash
 description: "출장세차 앱 - Flutter 기반 모바일 앱"
-publish_to: 'none'
+publish_to: "none"
 
 version: 1.0.0+1
 
@@ -10,18 +10,23 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  
+
   # 상태관리
   provider: ^6.1.1
-  
+
   # HTTP 통신
   http: ^1.1.0
-  
+
   # 로컬 저장소
   shared_preferences: ^2.2.2
-  
+
   # UI 컴포넌트
   cupertino_icons: ^1.0.8
+
+  # 소셜 로그인
+  kakao_flutter_sdk_user: ^1.9.5 # 카카오 로그인
+  flutter_naver_login: ^1.8.0 # 네이버 로그인
+  google_sign_in: ^6.2.1 # 구글 로그인
 
 dev_dependencies:
   flutter_test:
@@ -33,7 +38,6 @@ dev_dependencies:
 
 # The following section is specific to Flutter packages.
 flutter:
-
   # The following line ensures that the Material Icons font is
   # included with your application, so that you can use the icons in
   # the material Icons class.

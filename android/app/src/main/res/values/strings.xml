@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- 카카오 로그인 -->
+    <string name="kakaoNativeAppKey">f1370b8914ac0bdd538c9dfc7f7c2741</string>
+    
+    <!-- 네이버 로그인 -->
+    <string name="client_id">xTBEz_nrYKIyooGfmzB1</string>
+    <string name="client_secret">Le3qmP2XI0</string>
+    <string name="client_name">FineWash</string>
+</resources>
+

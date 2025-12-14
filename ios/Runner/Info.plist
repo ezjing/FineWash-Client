@@ -2,6 +2,48 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleTypeRole</key>
+			<string>Editor</string>
+			<key>CFBundleURLName</key>
+			<string>com.finewash.fineWash</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>finewash</string>
+			</array>
+		</dict>
+		<!-- 카카오 로그인 -->
+		<dict>
+			<key>CFBundleTypeRole</key>
+			<string>Editor</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>kakaof1370b8914ac0bdd538c9dfc7f7c2741</string>
+			</array>
+		</dict>
+	</array>
+	<!-- 카카오/네이버 앱 실행 허용 -->
+	<key>LSApplicationQueriesSchemes</key>
+	<array>
+		<!-- 카카오 -->
+		<string>kakaokompassauth</string>
+		<string>kakaolink</string>
+		<string>kakaoplus</string>
+		<!-- 네이버 -->
+		<string>naversearchapp</string>
+		<string>naversearchthirdlogin</string>
+	</array>
+	<!-- 네이버 로그인 설정 -->
+	<key>naverServiceAppUrlScheme</key>
+	<string>finewash</string>
+	<key>naverConsumerKey</key>
+	<string>xTBEz_nrYKIyooGfmzB1</string>
+	<key>naverConsumerSecret</key>
+	<string>Le3qmP2XI0</string>
+	<key>naverServiceAppName</key>
+	<string>FineWash</string>
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
 	<key>CFBundleDisplayName</key>

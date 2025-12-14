@@ -24,7 +24,27 @@
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
+            <!-- URL Scheme for deep linking -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW"/>
+                <category android:name="android.intent.category.DEFAULT"/>
+                <category android:name="android.intent.category.BROWSABLE"/>
+                <data android:scheme="finewash"/>
+            </intent-filter>
         </activity>
+        
+        <!-- 카카오 로그인 -->
+        <activity 
+            android:name="com.kakao.sdk.flutter.AuthCodeHandlerActivity"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:host="oauth" android:scheme="kakaof1370b8914ac0bdd538c9dfc7f7c2741" />
+            </intent-filter>
+        </activity>
+        
         <!-- Don't delete the meta-data below.
              This is used by the Flutter tool to generate GeneratedPluginRegistrant.java -->
         <meta-data

@@ -3,20 +3,20 @@ import 'package:provider/provider.dart';
 import '../models/service_type_model.dart';
 import '../models/wash_location_model.dart';
 import '../services/vehicle_service.dart';
-import '../services/booking_service.dart';
+import '../services/reservation_service.dart';
 import '../utils/app_colors.dart';
 import 'vehicle_registration_screen.dart';
-import 'booking_confirmation_screen.dart';
+import 'reservation_confirmation_screen.dart';
 
-class PartnerWashBookingScreen extends StatefulWidget {
-  const PartnerWashBookingScreen({super.key});
+class PartnerWashReservationScreen extends StatefulWidget {
+  const PartnerWashReservationScreen({super.key});
 
   @override
-  State<PartnerWashBookingScreen> createState() => _PartnerWashBookingScreenState();
+  State<PartnerWashReservationScreen> createState() => _PartnerWashReservationScreenState();
 }
 
-class _PartnerWashBookingScreenState extends State<PartnerWashBookingScreen> {
-  String? _selectedVehicleId;
+class _PartnerWashReservationScreenState extends State<PartnerWashReservationScreen> {
+  int? _selectedVehicleId;
   String? _selectedLocationId;
   String _selectedServiceId = 'basic';
   DateTime? _selectedDate;
@@ -28,19 +28,28 @@ class _PartnerWashBookingScreenState extends State<PartnerWashBookingScreen> {
     if (date != null) setState(() => _selectedDate = date);
   }
 
-  Future<void> _handleBooking() async {
+  Future<void> _handleReservation() async {
     if (_selectedVehicleId == null || _selectedLocationId == null || _selectedDate == null || _selectedTime == null) {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('모든 정보를 입력해주세요.'), backgroundColor: AppColors.warning));
       return;
     }
     final selectedService = partnerWashServices.firstWhere((s) => s.id == _selectedServiceId);
-    final selectedLocation = dummyWashLocations.firstWhere((l) => l.id == _selectedLocationId);
-    final bookingService = Provider.of<BookingService>(context, listen: false);
+    final reservationService = Provider.of<ReservationService>(context, listen: false);
     final vehicleService = Provider.of<VehicleService>(context, listen: false);
-    final success = await bookingService.saveLogic2(vehicleId: _selectedVehicleId!, serviceType: selectedService.name, date: '${_selectedDate!.year}-${_selectedDate!.month.toString().padLeft(2, '0')}-${_selectedDate!.day.toString().padLeft(2, '0')}', time: _selectedTime!, washLocation: selectedLocation.name, price: selectedService.price);
+    final dateStr = '${_selectedDate!.year}-${_selectedDate!.month.toString().padLeft(2, '0')}-${_selectedDate!.day.toString().padLeft(2, '0')}';
+    // TODO: busDtlIdx는 실제로는 선택한 세차장의 bus_dtl_idx를 사용해야 함
+    final success = await reservationService.saveLogic2(
+      vehicleId: _selectedVehicleId!,
+      mainOption: '방문',
+      midOption: selectedService.name,
+      subOption: selectedService.description,
+      date: dateStr,
+      time: _selectedTime!,
+      busDtlIdx: int.tryParse(_selectedLocationId ?? '0') ?? 0,
+    );
     if (success && mounted) {
       final vehicle = vehicleService.getVehicleById(_selectedVehicleId!);
-      Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => BookingConfirmationScreen(booking: bookingService.currentBooking!, vehicle: vehicle!)));
+      Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => ReservationConfirmationScreen(reservation: reservationService.currentReservation!, vehicle: vehicle!)));
     }
   }
 
@@ -59,7 +68,7 @@ class _PartnerWashBookingScreenState extends State<PartnerWashBookingScreen> {
             const Text('차량 선택', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: AppColors.textPrimary)),
             const SizedBox(height: 12),
             if (vehicles.isEmpty) InkWell(onTap: () async { final result = await Navigator.push(context, MaterialPageRoute(builder: (_) => const VehicleRegistrationScreen())); if (result == true) setState(() {}); }, child: Container(padding: const EdgeInsets.all(20), decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(12), border: Border.all(color: AppColors.border)), child: const Row(mainAxisAlignment: MainAxisAlignment.center, children: [Icon(Icons.add, color: AppColors.secondary), SizedBox(width: 8), Text('차량 정보 등록하기', style: TextStyle(color: AppColors.secondary, fontWeight: FontWeight.w600))])))
-            else Container(padding: const EdgeInsets.symmetric(horizontal: 16), decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(12), border: Border.all(color: AppColors.border)), child: DropdownButtonHideUnderline(child: DropdownButton<String>(value: _selectedVehicleId, hint: const Text('차량을 선택하세요'), isExpanded: true, items: vehicles.map((v) => DropdownMenuItem<String>(value: v.id, child: Text(v.displayName))).toList(), onChanged: (value) => setState(() => _selectedVehicleId = value)))),
+            else Container(padding: const EdgeInsets.symmetric(horizontal: 16), decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(12), border: Border.all(color: AppColors.border)), child: DropdownButtonHideUnderline(child: DropdownButton<int>(value: _selectedVehicleId, hint: const Text('차량을 선택하세요'), isExpanded: true, items: vehicles.map((v) => DropdownMenuItem<int>(value: v.vehIdx, child: Text(v.displayName))).toList(), onChanged: (value) => setState(() => _selectedVehicleId = value)))),
             const SizedBox(height: 24),
             const Text('세차장 선택', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: AppColors.textPrimary)),
             const SizedBox(height: 12),
@@ -77,7 +86,7 @@ class _PartnerWashBookingScreenState extends State<PartnerWashBookingScreen> {
             const SizedBox(height: 12),
             Wrap(spacing: 8, runSpacing: 8, children: _availableTimes.map((time) => ChoiceChip(label: Text(time), selected: _selectedTime == time, onSelected: (selected) => setState(() => _selectedTime = selected ? time : null), selectedColor: AppColors.secondary.withOpacity(0.2), labelStyle: TextStyle(color: _selectedTime == time ? AppColors.secondary : AppColors.textSecondary, fontWeight: _selectedTime == time ? FontWeight.w600 : FontWeight.normal))).toList()),
             const SizedBox(height: 32),
-            Consumer<BookingService>(builder: (context, bookingService, child) => ElevatedButton(onPressed: bookingService.isLoading ? null : _handleBooking, style: ElevatedButton.styleFrom(backgroundColor: AppColors.secondary), child: bookingService.isLoading ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white)) : const Text('예약하기'))),
+            Consumer<ReservationService>(builder: (context, reservationService, child) => ElevatedButton(onPressed: reservationService.isLoading ? null : _handleReservation, style: ElevatedButton.styleFrom(backgroundColor: AppColors.secondary), child: reservationService.isLoading ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white)) : const Text('예약하기'))),
           ],
         ),
       ),

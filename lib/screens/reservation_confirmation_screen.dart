@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
-import '../models/booking_model.dart';
+import '../models/reservation_model.dart';
 import '../models/vehicle_model.dart';
 import '../utils/app_colors.dart';
 
-class BookingConfirmationScreen extends StatelessWidget {
-  final BookingModel booking;
+class ReservationConfirmationScreen extends StatelessWidget {
+  final ReservationModel reservation;
   final VehicleModel vehicle;
 
-  const BookingConfirmationScreen({super.key, required this.booking, required this.vehicle});
+  const ReservationConfirmationScreen({super.key, required this.reservation, required this.vehicle});
 
   @override
   Widget build(BuildContext context) {
@@ -43,15 +43,17 @@ class BookingConfirmationScreen extends StatelessWidget {
                           const SizedBox(height: 20),
                           _InfoRow(icon: Icons.directions_car_outlined, label: '차량', value: vehicle.displayName),
                           const SizedBox(height: 16),
-                          _InfoRow(icon: Icons.auto_awesome_outlined, label: '서비스', value: booking.serviceType),
+                          if (reservation.mainOption != null) _InfoRow(icon: Icons.auto_awesome_outlined, label: '대옵션', value: reservation.mainOption!),
+                          if (reservation.mainOption != null) const SizedBox(height: 16),
+                          if (reservation.midOption != null) _InfoRow(icon: Icons.auto_awesome_outlined, label: '중옵션', value: reservation.midOption!),
+                          if (reservation.midOption != null) const SizedBox(height: 16),
+                          if (reservation.subOption != null) _InfoRow(icon: Icons.auto_awesome_outlined, label: '소옵션', value: reservation.subOption!),
+                          if (reservation.subOption != null) const SizedBox(height: 16),
+                          _InfoRow(icon: Icons.calendar_today_outlined, label: '날짜', value: reservation.date ?? ''),
                           const SizedBox(height: 16),
-                          _InfoRow(icon: Icons.calendar_today_outlined, label: '날짜', value: booking.date),
+                          _InfoRow(icon: Icons.access_time_outlined, label: '시간', value: reservation.time ?? ''),
                           const SizedBox(height: 16),
-                          _InfoRow(icon: Icons.access_time_outlined, label: '시간', value: booking.time),
-                          const SizedBox(height: 16),
-                          if (booking.type == BookingType.mobile && booking.address != null) ...[_InfoRow(icon: Icons.location_on_outlined, label: '주소', value: booking.address!), const SizedBox(height: 16)],
-                          if (booking.type == BookingType.partner && booking.washLocation != null) ...[_InfoRow(icon: Icons.location_on_outlined, label: '세차장', value: booking.washLocation!), const SizedBox(height: 16)],
-                          _InfoRow(icon: Icons.credit_card_outlined, label: '결제 금액', value: '${booking.price.toString().replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (m) => '${m[1]},')}원', valueColor: AppColors.primary),
+                          if (reservation.vehicleLocation != null) ...[_InfoRow(icon: Icons.location_on_outlined, label: '차량 위치', value: reservation.vehicleLocation!), const SizedBox(height: 16)],
                         ],
                       ),
                     ),

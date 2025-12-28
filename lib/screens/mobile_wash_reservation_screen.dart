@@ -2,23 +2,23 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../models/service_type_model.dart';
 import '../services/vehicle_service.dart';
-import '../services/booking_service.dart';
+import '../services/reservation_service.dart';
 import '../services/address_service.dart';
 import '../utils/app_colors.dart';
 import 'vehicle_registration_screen.dart';
-import 'booking_confirmation_screen.dart';
+import 'reservation_confirmation_screen.dart';
 import 'address_search_screen.dart';
 
-class MobileWashBookingScreen extends StatefulWidget {
-  const MobileWashBookingScreen({super.key});
+class MobileWashReservationScreen extends StatefulWidget {
+  const MobileWashReservationScreen({super.key});
 
   @override
-  State<MobileWashBookingScreen> createState() =>
-      _MobileWashBookingScreenState();
+  State<MobileWashReservationScreen> createState() =>
+      _MobileWashReservationScreenState();
 }
 
-class _MobileWashBookingScreenState extends State<MobileWashBookingScreen> {
-  String? _selectedVehicleId;
+class _MobileWashReservationScreenState extends State<MobileWashReservationScreen> {
+  int? _selectedVehicleId;
   String _selectedServiceId = 'basic';
   DateTime? _selectedDate;
   String? _selectedTime;
@@ -66,7 +66,7 @@ class _MobileWashBookingScreenState extends State<MobileWashBookingScreen> {
     if (date != null) setState(() => _selectedDate = date);
   }
 
-  Future<void> _handleBooking() async {
+  Future<void> _handleReservation() async {
     if (_selectedVehicleId == null ||
         _selectedDate == null ||
         _selectedTime == null ||
@@ -82,28 +82,29 @@ class _MobileWashBookingScreenState extends State<MobileWashBookingScreen> {
     final selectedService = mobileWashServices.firstWhere(
       (s) => s.id == _selectedServiceId,
     );
-    final bookingService = Provider.of<BookingService>(context, listen: false);
+    final reservationService = Provider.of<ReservationService>(context, listen: false);
     final vehicleService = Provider.of<VehicleService>(context, listen: false);
     // 전체 주소 = 기본 주소 + 상세 주소
     final fullAddress = _detailAddressController.text.isNotEmpty
         ? '${_selectedAddress!.fullAddress} ${_detailAddressController.text}'
         : _selectedAddress!.fullAddress;
-    final success = await bookingService.saveLogic1(
+    final dateStr = '${_selectedDate!.year}-${_selectedDate!.month.toString().padLeft(2, '0')}-${_selectedDate!.day.toString().padLeft(2, '0')}';
+    final success = await reservationService.saveLogic1(
       vehicleId: _selectedVehicleId!,
-      serviceType: selectedService.name,
-      date:
-          '${_selectedDate!.year}-${_selectedDate!.month.toString().padLeft(2, '0')}-${_selectedDate!.day.toString().padLeft(2, '0')}',
+      mainOption: '출장',
+      midOption: selectedService.name,
+      subOption: selectedService.description,
+      date: dateStr,
       time: _selectedTime!,
-      address: fullAddress,
-      price: selectedService.price,
+      vehicleLocation: fullAddress,
     );
     if (success && mounted) {
       final vehicle = vehicleService.getVehicleById(_selectedVehicleId!);
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(
-          builder: (_) => BookingConfirmationScreen(
-            booking: bookingService.currentBooking!,
+          builder: (_) => ReservationConfirmationScreen(
+            reservation: reservationService.currentReservation!,
             vehicle: vehicle!,
           ),
         ),
@@ -178,14 +179,14 @@ class _MobileWashBookingScreenState extends State<MobileWashBookingScreen> {
                   border: Border.all(color: AppColors.border),
                 ),
                 child: DropdownButtonHideUnderline(
-                  child: DropdownButton<String>(
+                  child: DropdownButton<int>(
                     value: _selectedVehicleId,
                     hint: const Text('차량을 선택하세요'),
                     isExpanded: true,
                     items: vehicles
                         .map(
-                          (v) => DropdownMenuItem<String>(
-                            value: v.id,
+                          (v) => DropdownMenuItem<int>(
+                            value: v.vehIdx,
                             child: Text(v.displayName),
                           ),
                         )
@@ -408,10 +409,10 @@ class _MobileWashBookingScreenState extends State<MobileWashBookingScreen> {
                   .toList(),
             ),
             const SizedBox(height: 32),
-            Consumer<BookingService>(
-              builder: (context, bookingService, child) => ElevatedButton(
-                onPressed: bookingService.isLoading ? null : _handleBooking,
-                child: bookingService.isLoading
+            Consumer<ReservationService>(
+              builder: (context, reservationService, child) => ElevatedButton(
+                onPressed: reservationService.isLoading ? null : _handleReservation,
+                child: reservationService.isLoading
                     ? const SizedBox(
                         height: 20,
                         width: 20,
@@ -429,3 +430,4 @@ class _MobileWashBookingScreenState extends State<MobileWashBookingScreen> {
     );
   }
 }
+

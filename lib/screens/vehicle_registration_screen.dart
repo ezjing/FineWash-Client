@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../models/vehicle_model.dart';
 import '../services/vehicle_service.dart';
 import '../utils/app_colors.dart';
 
@@ -13,21 +12,34 @@ class VehicleRegistrationScreen extends StatefulWidget {
 
 class _VehicleRegistrationScreenState extends State<VehicleRegistrationScreen> {
   final _formKey = GlobalKey<FormState>();
-  final _nameController = TextEditingController();
+  final _modelController = TextEditingController();
   final _numberController = TextEditingController();
-  VehicleSize _selectedSize = VehicleSize.medium;
+  final _colorController = TextEditingController();
+  final _yearController = TextEditingController();
+  final _remarkController = TextEditingController();
+  String? _selectedVehicleType;
 
   @override
   void dispose() {
-    _nameController.dispose();
+    _modelController.dispose();
     _numberController.dispose();
+    _colorController.dispose();
+    _yearController.dispose();
+    _remarkController.dispose();
     super.dispose();
   }
 
   Future<void> _handleRegister() async {
     if (_formKey.currentState!.validate()) {
       final vehicleService = Provider.of<VehicleService>(context, listen: false);
-      final success = await vehicleService.saveLogic1(name: _nameController.text.trim(), number: _numberController.text.trim(), size: _selectedSize);
+      final success = await vehicleService.saveLogic1(
+        vehicleType: _selectedVehicleType ?? '준중형',
+        model: _modelController.text.trim(),
+        vehicleNumber: _numberController.text.trim(),
+        color: _colorController.text.trim().isEmpty ? null : _colorController.text.trim(),
+        year: _yearController.text.trim().isEmpty ? null : int.tryParse(_yearController.text.trim()),
+        remark: _remarkController.text.trim().isEmpty ? null : _remarkController.text.trim(),
+      );
       if (success && mounted) Navigator.pop(context, true);
     }
   }
@@ -56,33 +68,40 @@ class _VehicleRegistrationScreenState extends State<VehicleRegistrationScreen> {
                 ),
               ),
               const SizedBox(height: 24),
-              TextFormField(controller: _nameController, decoration: const InputDecoration(labelText: '차량 이름', hintText: '예: 그랜저, 소나타', prefixIcon: Icon(Icons.edit_outlined), filled: true, fillColor: Colors.white), validator: (value) => value == null || value.isEmpty ? '차량 이름을 입력해주세요' : null),
+              const Text('차종', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: AppColors.textPrimary)),
+              const SizedBox(height: 12),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: AppColors.border),
+                ),
+                child: DropdownButtonHideUnderline(
+                  child: DropdownButton<String>(
+                    value: _selectedVehicleType,
+                    hint: const Text('차종을 선택하세요'),
+                    isExpanded: true,
+                    items: ['경차', '소형', '준중형', '중형', '대형', 'SUV', 'RV'].map((type) {
+                      return DropdownMenuItem<String>(
+                        value: type,
+                        child: Text(type),
+                      );
+                    }).toList(),
+                    onChanged: (value) => setState(() => _selectedVehicleType = value),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+              TextFormField(controller: _modelController, decoration: const InputDecoration(labelText: '모델명', hintText: '예: 그랜저, 소나타', prefixIcon: Icon(Icons.edit_outlined), filled: true, fillColor: Colors.white), validator: (value) => value == null || value.isEmpty ? '모델명을 입력해주세요' : null),
               const SizedBox(height: 16),
               TextFormField(controller: _numberController, decoration: const InputDecoration(labelText: '차량 번호', hintText: '12가 3456', prefixIcon: Icon(Icons.confirmation_number_outlined), filled: true, fillColor: Colors.white), validator: (value) => value == null || value.isEmpty ? '차량 번호를 입력해주세요' : null),
-              const SizedBox(height: 24),
-              const Text('차량 크기', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: AppColors.textPrimary)),
-              const SizedBox(height: 12),
-              GridView.count(
-                shrinkWrap: true, physics: const NeverScrollableScrollPhysics(), crossAxisCount: 2, crossAxisSpacing: 12, mainAxisSpacing: 12, childAspectRatio: 1.5,
-                children: VehicleSize.values.map((size) {
-                  final isSelected = _selectedSize == size;
-                  return InkWell(
-                    onTap: () => setState(() => _selectedSize = size),
-                    child: Container(
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(color: isSelected ? AppColors.primary.withOpacity(0.1) : Colors.white, border: Border.all(color: isSelected ? AppColors.primary : AppColors.border, width: isSelected ? 2 : 1), borderRadius: BorderRadius.circular(12)),
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center, crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(size.label, style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: isSelected ? AppColors.primary : AppColors.textPrimary)),
-                          const SizedBox(height: 4),
-                          Text(size.description, style: TextStyle(fontSize: 12, color: isSelected ? AppColors.primary : AppColors.textSecondary)),
-                        ],
-                      ),
-                    ),
-                  );
-                }).toList(),
-              ),
+              const SizedBox(height: 16),
+              TextFormField(controller: _colorController, decoration: const InputDecoration(labelText: '색상 (선택)', hintText: '예: 검정, 흰색', prefixIcon: Icon(Icons.color_lens_outlined), filled: true, fillColor: Colors.white)),
+              const SizedBox(height: 16),
+              TextFormField(controller: _yearController, decoration: const InputDecoration(labelText: '연식 (선택)', hintText: '예: 2020', prefixIcon: Icon(Icons.calendar_today_outlined), filled: true, fillColor: Colors.white), keyboardType: TextInputType.number),
+              const SizedBox(height: 16),
+              TextFormField(controller: _remarkController, decoration: const InputDecoration(labelText: '비고 (선택)', hintText: '추가 정보를 입력하세요', prefixIcon: Icon(Icons.note_outlined), filled: true, fillColor: Colors.white), maxLines: 3),
               const SizedBox(height: 32),
               Consumer<VehicleService>(builder: (context, vehicleService, child) => ElevatedButton(onPressed: vehicleService.isLoading ? null : _handleRegister, child: vehicleService.isLoading ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white)) : const Text('등록하기'))),
             ],

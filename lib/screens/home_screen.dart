@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../services/auth_service.dart';
 import '../utils/app_colors.dart';
-import 'mobile_wash_booking_screen.dart';
-import 'partner_wash_booking_screen.dart';
+import 'mobile_wash_reservation_screen.dart';
+import 'partner_wash_reservation_screen.dart';
 import 'shop_screen.dart';
 import 'my_page_screen.dart';
 
@@ -39,8 +39,8 @@ class HomeScreen extends StatelessWidget {
                   GridView.count(
                     shrinkWrap: true, physics: const NeverScrollableScrollPhysics(), crossAxisCount: 2, crossAxisSpacing: 16, mainAxisSpacing: 16,
                     children: [
-                      _MenuCard(icon: Icons.local_car_wash_rounded, title: '출장 세차 예약', description: '원하는 장소에서 세차 서비스', color: AppColors.primary, onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const MobileWashBookingScreen()))),
-                      _MenuCard(icon: Icons.location_on_rounded, title: '제휴 세차장 예약', description: '가까운 제휴 세차장 이용', color: AppColors.secondary, onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const PartnerWashBookingScreen()))),
+                      _MenuCard(icon: Icons.local_car_wash_rounded, title: '출장 세차 예약', description: '원하는 장소에서 세차 서비스', color: AppColors.primary, onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const MobileWashReservationScreen()))),
+                      _MenuCard(icon: Icons.location_on_rounded, title: '제휴 세차장 예약', description: '가까운 제휴 세차장 이용', color: AppColors.secondary, onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const PartnerWashReservationScreen()))),
                       _MenuCard(icon: Icons.shopping_bag_rounded, title: '쇼핑몰', description: '세차 용품 구매', color: AppColors.purple, onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ShopScreen()))),
                       _MenuCard(icon: Icons.person_rounded, title: '마이페이지', description: '예약 내역 및 설정', color: AppColors.orange, onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const MyPageScreen()))),
                     ],

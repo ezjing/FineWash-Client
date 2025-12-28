@@ -28,6 +28,7 @@ dependencies:
   flutter_naver_login: ^1.8.0 # 네이버 로그인
   google_sign_in: ^6.2.1 # 구글 로그인
   webview_flutter: ^4.13.0
+  iamport_flutter: ^0.10.21
 
 dev_dependencies:
   flutter_test:

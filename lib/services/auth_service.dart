@@ -1,14 +1,14 @@
 import 'package:flutter/foundation.dart';
-import '../models/user_model.dart';
+import '../models/member_model.dart';
 import 'api_service.dart';
 import 'social_auth_service.dart';
 
 class AuthService extends ChangeNotifier {
-  UserModel? _currentUser;
+  MemberModel? _currentUser;
   bool _isLoading = false;
   SocialProvider? _socialProvider;
 
-  UserModel? get currentUser => _currentUser;
+  MemberModel? get currentUser => _currentUser;
   bool get isAuthenticated => _currentUser != null;
   bool get isLoading => _isLoading;
   SocialProvider? get socialProvider => _socialProvider;
@@ -25,14 +25,14 @@ class AuthService extends ChangeNotifier {
       if (response['token'] != null) {
         await ApiService.setToken(response['token']);
       }
-      _currentUser = UserModel.fromJson(response['user']);
+      _currentUser = MemberModel.fromJson(response['user']);
       _isLoading = false;
       notifyListeners();
       return true;
     } catch (e) {
       // 개발 환경에서는 Mock 로그인 허용
-      _currentUser = UserModel(
-        id: '1',
+      _currentUser = MemberModel(
+        memIdx: 1,
         name: '김민수',
         email: email,
         phone: '010-1234-5678',
@@ -79,15 +79,15 @@ class AuthService extends ChangeNotifier {
           if (response['token'] != null) {
             await ApiService.setToken(response['token']);
           }
-          _currentUser = UserModel.fromJson(response['user']);
+          _currentUser = MemberModel.fromJson(response['user']);
         } catch (e) {
           // 개발 환경에서는 Mock 사용자 생성
-          _currentUser = UserModel(
-            id: result.id ?? DateTime.now().millisecondsSinceEpoch.toString(),
+          _currentUser = MemberModel(
+            memIdx: int.tryParse(result.id ?? '0') ?? DateTime.now().millisecondsSinceEpoch,
             name: result.name ?? '소셜 사용자',
             email: result.email ?? '',
             phone: '',
-            profileImage: result.profileImage,
+            socialType: provider.name,
           );
         }
 
@@ -127,13 +127,13 @@ class AuthService extends ChangeNotifier {
       if (response['token'] != null) {
         await ApiService.setToken(response['token']);
       }
-      _currentUser = UserModel.fromJson(response['user']);
+      _currentUser = MemberModel.fromJson(response['user']);
       _isLoading = false;
       notifyListeners();
       return true;
     } catch (e) {
-      _currentUser = UserModel(
-        id: DateTime.now().millisecondsSinceEpoch.toString(),
+      _currentUser = MemberModel(
+        memIdx: DateTime.now().millisecondsSinceEpoch,
         name: name,
         email: email,
         phone: phone,

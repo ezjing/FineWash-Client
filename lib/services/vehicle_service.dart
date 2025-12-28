@@ -10,12 +10,17 @@ class VehicleService extends ChangeNotifier {
   bool get isLoading => _isLoading;
   bool get hasVehicles => _vehicles.isNotEmpty;
 
+  // 차량 목록 조회 (SearchLogic1)
   Future<void> searchLogic1() async {
     _isLoading = true;
     notifyListeners();
     try {
       final response = await ApiService.get('/vehicles');
-      _vehicles = (response['vehicles'] as List).map((v) => VehicleModel.fromJson(v)).toList();
+      if (response['success'] == true && response['vehicles'] != null) {
+        _vehicles = (response['vehicles'] as List)
+            .map((v) => VehicleModel.fromJson(v))
+            .toList();
+      }
     } catch (e) {
       // 오프라인 모드
     }
@@ -23,18 +28,46 @@ class VehicleService extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<bool> saveLogic1({required String name, required String number, required VehicleSize size}) async {
+  // 차량 등록 (SaveLogic1)
+  Future<bool> saveLogic1({
+    required String vehicleType,
+    required String model,
+    required String vehicleNumber,
+    String? color,
+    int? year,
+    String? remark,
+  }) async {
     _isLoading = true;
     notifyListeners();
     try {
-      final response = await ApiService.post('/vehicles', {'name': name, 'number': number, 'size': size.name});
-      final newVehicle = VehicleModel.fromJson(response['vehicle']);
-      _vehicles.add(newVehicle);
+      final response = await ApiService.post('/vehicles', {
+        'vehicle_type': vehicleType,
+        'model': model,
+        'vehicle_number': vehicleNumber,
+        'color': color,
+        'year': year,
+        'remark': remark,
+      });
+      if (response['success'] == true && response['vehicle'] != null) {
+        final newVehicle = VehicleModel.fromJson(response['vehicle']);
+        _vehicles.add(newVehicle);
+        _isLoading = false;
+        notifyListeners();
+        return true;
+      }
       _isLoading = false;
       notifyListeners();
-      return true;
+      return false;
     } catch (e) {
-      final newVehicle = VehicleModel(id: DateTime.now().millisecondsSinceEpoch.toString(), name: name, number: number, size: size);
+      final newVehicle = VehicleModel(
+        vehIdx: DateTime.now().millisecondsSinceEpoch,
+        vehicleType: vehicleType,
+        model: model,
+        vehicleNumber: vehicleNumber,
+        color: color,
+        year: year,
+        remark: remark,
+      );
       _vehicles.add(newVehicle);
       _isLoading = false;
       notifyListeners();
@@ -42,9 +75,9 @@ class VehicleService extends ChangeNotifier {
     }
   }
 
-  VehicleModel? getVehicleById(String id) {
+  VehicleModel? getVehicleById(int vehIdx) {
     try {
-      return _vehicles.firstWhere((v) => v.id == id);
+      return _vehicles.firstWhere((v) => v.vehIdx == vehIdx);
     } catch (e) {
       return null;
     }
@@ -55,4 +88,3 @@ class VehicleService extends ChangeNotifier {
     notifyListeners();
   }
 }
-

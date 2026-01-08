@@ -58,7 +58,9 @@ class ReservationService extends ChangeNotifier {
         'vehicle_location': vehicleLocation,
       });
       if (response['success'] == true && response['reservation'] != null) {
-        final newReservation = ReservationModel.fromJson(response['reservation']);
+        final newReservation = ReservationModel.fromJson(
+          response['reservation'],
+        );
         _reservations.add(newReservation);
         _currentReservation = newReservation;
         _isLoading = false;
@@ -98,7 +100,9 @@ class ReservationService extends ChangeNotifier {
         'bus_dtl_idx': busDtlIdx,
       });
       if (response['success'] == true && response['reservation'] != null) {
-        final newReservation = ReservationModel.fromJson(response['reservation']);
+        final newReservation = ReservationModel.fromJson(
+          response['reservation'],
+        );
         _reservations.add(newReservation);
         _currentReservation = newReservation;
         _isLoading = false;
@@ -120,11 +124,16 @@ class ReservationService extends ChangeNotifier {
     _isLoading = true;
     notifyListeners();
     try {
-      final response = await ApiService.put('/reservations/$resvIdx/cancel', {});
+      final response = await ApiService.put(
+        '/reservations/$resvIdx/cancel',
+        {},
+      );
       if (response['success'] == true) {
         final index = _reservations.indexWhere((r) => r.resvIdx == resvIdx);
         if (index != -1) {
-          _reservations[index] = ReservationModel.fromJson(response['reservation']);
+          _reservations[index] = ReservationModel.fromJson(
+            response['reservation'],
+          );
         }
         _isLoading = false;
         notifyListeners();
@@ -142,9 +151,11 @@ class ReservationService extends ChangeNotifier {
 
   List<ReservationModel> getRecentReservations({int limit = 3}) {
     final sorted = List<ReservationModel>.from(_reservations)
-      ..sort((a, b) =>
-          (b.createdDate ?? DateTime.now())
-              .compareTo(a.createdDate ?? DateTime.now()));
+      ..sort(
+        (a, b) => (b.createdDate ?? DateTime.now()).compareTo(
+          a.createdDate ?? DateTime.now(),
+        ),
+      );
     return sorted.take(limit).toList();
   }
 
@@ -154,4 +165,3 @@ class ReservationService extends ChangeNotifier {
     notifyListeners();
   }
 }
-

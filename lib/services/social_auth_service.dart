@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:kakao_flutter_sdk_user/kakao_flutter_sdk_user.dart';
 import 'package:flutter_naver_login/flutter_naver_login.dart';
+import 'package:flutter_naver_login/interface/types/naver_login_status.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 
 /// 소셜 로그인 제공자 타입
@@ -96,10 +97,11 @@ class SocialAuthService {
       final result = await FlutterNaverLogin.logIn();
 
       if (result.status == NaverLoginStatus.loggedIn) {
-        debugPrint('네이버 로그인 성공: ${result.accessToken}');
+        debugPrint('네이버 로그인 성공: ${result.accessToken?.accessToken}');
 
-        // 사용자 정보 가져오기
-        final account = await FlutterNaverLogin.currentAccount();
+        // 사용자 정보 가져오기 (logIn 결과에 account가 포함되어 있으면 사용, 없으면 별도 조회)
+        final account =
+            result.account ?? await FlutterNaverLogin.getCurrentAccount();
 
         debugPrint(
           '네이버 사용자 정보: id=${account.id}, name=${account.name}, email=${account.email}',
@@ -116,7 +118,7 @@ class SocialAuthService {
       } else {
         return SocialLoginResult(
           success: false,
-          errorMessage: '네이버 로그인이 취소되었습니다.',
+          errorMessage: result.errorMessage ?? '네이버 로그인이 취소되었습니다.',
         );
       }
     } catch (e) {

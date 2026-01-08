@@ -31,6 +31,52 @@ class FineWashApp extends StatelessWidget {
       child: MaterialApp(
         title: '출장세차',
         debugShowCheckedModeBanner: false,
+        builder: (context, child) {
+          // 화면별 SafeArea 설정
+          Widget buildSafeArea(Widget widget) {
+            // 현재 라우트 정보 가져오기
+            final route = ModalRoute.of(context);
+            final routeName = route?.settings.name;
+
+            // 특정 화면에서 SafeArea를 다르게 적용하려면 여기서 조건 추가
+            // 예시:
+            // - AppBar가 있는 화면: top SafeArea 제외 (AppBar가 자체적으로 처리)
+            // - 전체화면 화면: 모든 방향 SafeArea 적용
+            // - 기본: 하단만 SafeArea 적용 (안드로이드 네비게이션 바 대응)
+
+            bool topSafeArea = true;
+            bool bottomSafeArea = true;
+            bool leftSafeArea = false;
+            bool rightSafeArea = false;
+
+            // 화면별 조건 추가 예시
+            if (routeName != null) {
+              // AppBar가 있는 화면들은 top SafeArea 제외
+              if (routeName.contains('reservation') ||
+                  routeName.contains('shop') ||
+                  routeName.contains('my_page') ||
+                  routeName.contains('vehicle')) {
+                topSafeArea = false;
+              }
+
+              // 전체화면이 필요한 화면
+              if (routeName.contains('address_search')) {
+                topSafeArea = false;
+                bottomSafeArea = true;
+              }
+            }
+
+            return SafeArea(
+              top: topSafeArea,
+              bottom: bottomSafeArea,
+              left: leftSafeArea,
+              right: rightSafeArea,
+              child: widget,
+            );
+          }
+
+          return buildSafeArea(child ?? const SizedBox.shrink());
+        },
         theme: ThemeData(
           colorScheme: ColorScheme.fromSeed(
             seedColor: AppColors.primary,

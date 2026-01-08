@@ -4,6 +4,8 @@ import '../models/service_type_model.dart';
 import '../services/vehicle_service.dart';
 import '../services/reservation_service.dart';
 import '../services/address_service.dart';
+import '../services/payment_service.dart';
+import '../services/auth_service.dart';
 import '../utils/app_colors.dart';
 import 'vehicle_registration_screen.dart';
 import 'reservation_confirmation_screen.dart';
@@ -17,7 +19,8 @@ class MobileWashReservationScreen extends StatefulWidget {
       _MobileWashReservationScreenState();
 }
 
-class _MobileWashReservationScreenState extends State<MobileWashReservationScreen> {
+class _MobileWashReservationScreenState
+    extends State<MobileWashReservationScreen> {
   int? _selectedVehicleId;
   String _selectedServiceId = 'basic';
   DateTime? _selectedDate;
@@ -67,6 +70,7 @@ class _MobileWashReservationScreenState extends State<MobileWashReservationScree
   }
 
   Future<void> _handleReservation() async {
+    // 입력 검증
     if (_selectedVehicleId == null ||
         _selectedDate == null ||
         _selectedTime == null ||
@@ -79,37 +83,96 @@ class _MobileWashReservationScreenState extends State<MobileWashReservationScree
       );
       return;
     }
+
     final selectedService = mobileWashServices.firstWhere(
       (s) => s.id == _selectedServiceId,
     );
-    final reservationService = Provider.of<ReservationService>(context, listen: false);
-    final vehicleService = Provider.of<VehicleService>(context, listen: false);
-    // 전체 주소 = 기본 주소 + 상세 주소
-    final fullAddress = _detailAddressController.text.isNotEmpty
-        ? '${_selectedAddress!.fullAddress} ${_detailAddressController.text}'
-        : _selectedAddress!.fullAddress;
-    final dateStr = '${_selectedDate!.year}-${_selectedDate!.month.toString().padLeft(2, '0')}-${_selectedDate!.day.toString().padLeft(2, '0')}';
-    final success = await reservationService.saveLogic1(
-      vehicleId: _selectedVehicleId!,
-      mainOption: '출장',
-      midOption: selectedService.name,
-      subOption: selectedService.description,
-      date: dateStr,
-      time: _selectedTime!,
-      vehicleLocation: fullAddress,
+    final authService = Provider.of<AuthService>(context, listen: false);
+    final reservationService = Provider.of<ReservationService>(
+      context,
+      listen: false,
     );
-    if (success && mounted) {
-      final vehicle = vehicleService.getVehicleById(_selectedVehicleId!);
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(
-          builder: (_) => ReservationConfirmationScreen(
-            reservation: reservationService.currentReservation!,
-            vehicle: vehicle!,
-          ),
+    final vehicleService = Provider.of<VehicleService>(context, listen: false);
+
+    // 사용자 정보 가져오기
+    final user = authService.currentUser;
+    if (user == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('로그인이 필요합니다.'),
+          backgroundColor: AppColors.warning,
         ),
       );
+      return;
     }
+
+    // 주문 고유번호 생성
+    final merchantUid = PaymentService.generateMerchantUid();
+
+    // 결제 요청
+    await PaymentService.requestPayment(
+      context: context,
+      amount: selectedService.price,
+      merchantUid: merchantUid,
+      name: '${selectedService.name} - 출장 세차',
+      buyerName: user.name ?? '고객',
+      buyerTel: user.phone ?? '010-0000-0000',
+      buyerEmail: user.email ?? 'customer@example.com',
+      callback: (result) async {
+        // 결제 결과 처리
+        if (PaymentService.verifyPaymentResult(result)) {
+          // 결제 성공 - 예약 저장
+          final fullAddress = _detailAddressController.text.isNotEmpty
+              ? '${_selectedAddress!.fullAddress} ${_detailAddressController.text}'
+              : _selectedAddress!.fullAddress;
+          final dateStr =
+              '${_selectedDate!.year}-${_selectedDate!.month.toString().padLeft(2, '0')}-${_selectedDate!.day.toString().padLeft(2, '0')}';
+
+          final success = await reservationService.saveLogic1(
+            vehicleId: _selectedVehicleId!,
+            mainOption: '출장',
+            midOption: selectedService.name,
+            subOption: selectedService.description,
+            date: dateStr,
+            time: _selectedTime!,
+            vehicleLocation: fullAddress,
+          );
+
+          if (success && mounted) {
+            final vehicle = vehicleService.getVehicleById(_selectedVehicleId!);
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(
+                builder: (_) => ReservationConfirmationScreen(
+                  reservation: reservationService.currentReservation!,
+                  vehicle: vehicle!,
+                ),
+              ),
+            );
+          } else if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('예약 저장에 실패했습니다. 고객센터로 문의해주세요.'),
+                backgroundColor: AppColors.warning,
+              ),
+            );
+          }
+        } else {
+          // 결제 실패
+          if (mounted) {
+            final errorMsg =
+                result['error_msg'] ?? result['message'] ?? '결제에 실패했습니다.';
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(errorMsg),
+                backgroundColor: AppColors.warning,
+                duration: const Duration(seconds: 3),
+              ),
+            );
+          }
+        }
+      },
+    );
   }
 
   @override
@@ -411,7 +474,9 @@ class _MobileWashReservationScreenState extends State<MobileWashReservationScree
             const SizedBox(height: 32),
             Consumer<ReservationService>(
               builder: (context, reservationService, child) => ElevatedButton(
-                onPressed: reservationService.isLoading ? null : _handleReservation,
+                onPressed: reservationService.isLoading
+                    ? null
+                    : _handleReservation,
                 child: reservationService.isLoading
                     ? const SizedBox(
                         height: 20,
@@ -430,4 +495,3 @@ class _MobileWashReservationScreenState extends State<MobileWashReservationScree
     );
   }
 }
-

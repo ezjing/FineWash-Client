@@ -14,6 +14,8 @@ class HomeScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final authService = Provider.of<AuthService>(context);
     final user = authService.currentUser;
+    final mediaQuery = MediaQuery.of(context);
+    final topPadding = mediaQuery.padding.top;
 
     return Scaffold(
       body: SingleChildScrollView(
@@ -22,7 +24,7 @@ class HomeScreen extends StatelessWidget {
           children: [
             Container(
               padding: EdgeInsets.only(
-                top: MediaQuery.of(context).padding.top + 16,
+                top: topPadding + 16,
                 left: 24,
                 right: 24,
                 bottom: 32,
@@ -178,6 +180,8 @@ class HomeScreen extends StatelessWidget {
                 ],
               ),
             ),
+            // 하단 네비게이션 바 영역 패딩 추가
+            SizedBox(height: mediaQuery.padding.bottom),
           ],
         ),
       ),

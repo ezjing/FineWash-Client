@@ -122,11 +122,8 @@ class _AddressSearchScreenState extends State<AddressSearchScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
       appBar: AppBar(
         title: const Text('주소 검색'),
-        backgroundColor: Colors.white,
-        surfaceTintColor: Colors.white,
         leading: IconButton(
           icon: const Icon(Icons.close),
           onPressed: () => Navigator.pop(context),

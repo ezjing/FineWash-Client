@@ -50,206 +50,209 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final mediaQuery = MediaQuery.of(context);
+    final topPadding = mediaQuery.padding.top;
+    final bottomPadding = mediaQuery.padding.bottom;
+
     return Scaffold(
-      backgroundColor: Colors.white,
-      body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(24),
-          child: Form(
-            key: _formKey,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                const SizedBox(height: 40),
-                Center(
-                  child: Container(
-                    width: 80,
-                    height: 80,
-                    decoration: BoxDecoration(
-                      gradient: AppColors.primaryGradient,
-                      borderRadius: BorderRadius.circular(20),
-                      boxShadow: [
-                        BoxShadow(
-                          color: AppColors.primary.withOpacity(0.3),
-                          blurRadius: 20,
-                          offset: const Offset(0, 10),
-                        ),
-                      ],
-                    ),
-                    child: const Icon(
-                      Icons.local_car_wash_rounded,
-                      size: 40,
-                      color: Colors.white,
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 24),
-                const Text(
-                  '출장세차',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: 32,
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.primary,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                const Text(
-                  '언제 어디서나 깨끗한 세차',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: 16,
-                    color: AppColors.textSecondary,
-                  ),
-                ),
-                const SizedBox(height: 32),
-                TextFormField(
-                  controller: _emailController,
-                  keyboardType: TextInputType.emailAddress,
-                  decoration: const InputDecoration(
-                    labelText: '이메일',
-                    hintText: '이메일을 입력하세요',
-                    prefixIcon: Icon(Icons.email_outlined),
-                  ),
-                  validator: (value) {
-                    if (value == null || value.isEmpty) return '이메일을 입력해주세요';
-                    if (!value.contains('@')) return '올바른 이메일 형식이 아닙니다';
-                    return null;
-                  },
-                ),
-                const SizedBox(height: 16),
-                TextFormField(
-                  controller: _passwordController,
-                  obscureText: _obscurePassword,
-                  decoration: InputDecoration(
-                    labelText: '비밀번호',
-                    hintText: '비밀번호를 입력하세요',
-                    prefixIcon: const Icon(Icons.lock_outline),
-                    suffixIcon: IconButton(
-                      icon: Icon(
-                        _obscurePassword
-                            ? Icons.visibility_off_outlined
-                            : Icons.visibility_outlined,
+      body: SingleChildScrollView(
+        padding: EdgeInsets.only(
+          top: topPadding + 24,
+          left: 24,
+          right: 24,
+          bottom: bottomPadding + 24,
+        ),
+        child: Form(
+          key: _formKey,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              const SizedBox(height: 40),
+              Center(
+                child: Container(
+                  width: 80,
+                  height: 80,
+                  decoration: BoxDecoration(
+                    gradient: AppColors.primaryGradient,
+                    borderRadius: BorderRadius.circular(20),
+                    boxShadow: [
+                      BoxShadow(
+                        color: AppColors.primary.withOpacity(0.3),
+                        blurRadius: 20,
+                        offset: const Offset(0, 10),
                       ),
-                      onPressed: () =>
-                          setState(() => _obscurePassword = !_obscurePassword),
-                    ),
+                    ],
                   ),
-                  validator: (value) {
-                    if (value == null || value.isEmpty) return '비밀번호를 입력해주세요';
-                    if (value.length < 6) return '비밀번호는 6자 이상이어야 합니다';
-                    return null;
-                  },
+                  child: const Icon(
+                    Icons.local_car_wash_rounded,
+                    size: 40,
+                    color: Colors.white,
+                  ),
                 ),
-                const SizedBox(height: 24),
-                Consumer<AuthService>(
-                  builder: (context, authService, child) {
-                    return ElevatedButton(
-                      onPressed: authService.isLoading ? null : _handleLogin,
-                      child: authService.isLoading
-                          ? const SizedBox(
-                              height: 20,
-                              width: 20,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                color: Colors.white,
-                              ),
-                            )
-                          : const Text('로그인'),
-                    );
-                  },
+              ),
+              const SizedBox(height: 24),
+              const Text(
+                '출장세차',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 32,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.primary,
                 ),
-                const SizedBox(height: 24),
-                // 구분선
-                Row(
-                  children: [
-                    Expanded(child: Divider(color: Colors.grey.shade300)),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      child: Text(
-                        '간편 로그인',
-                        style: TextStyle(
-                          color: Colors.grey.shade500,
-                          fontSize: 14,
-                        ),
-                      ),
+              ),
+              const SizedBox(height: 8),
+              const Text(
+                '언제 어디서나 깨끗한 세차',
+                textAlign: TextAlign.center,
+                style: TextStyle(fontSize: 16, color: AppColors.textSecondary),
+              ),
+              const SizedBox(height: 32),
+              TextFormField(
+                controller: _emailController,
+                keyboardType: TextInputType.emailAddress,
+                decoration: const InputDecoration(
+                  labelText: '이메일',
+                  hintText: '이메일을 입력하세요',
+                  prefixIcon: Icon(Icons.email_outlined),
+                ),
+                validator: (value) {
+                  if (value == null || value.isEmpty) return '이메일을 입력해주세요';
+                  if (!value.contains('@')) return '올바른 이메일 형식이 아닙니다';
+                  return null;
+                },
+              ),
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: _passwordController,
+                obscureText: _obscurePassword,
+                decoration: InputDecoration(
+                  labelText: '비밀번호',
+                  hintText: '비밀번호를 입력하세요',
+                  prefixIcon: const Icon(Icons.lock_outline),
+                  suffixIcon: IconButton(
+                    icon: Icon(
+                      _obscurePassword
+                          ? Icons.visibility_off_outlined
+                          : Icons.visibility_outlined,
                     ),
-                    Expanded(child: Divider(color: Colors.grey.shade300)),
-                  ],
+                    onPressed: () =>
+                        setState(() => _obscurePassword = !_obscurePassword),
+                  ),
                 ),
-                const SizedBox(height: 24),
-                // 소셜 로그인 버튼들
-                Consumer<AuthService>(
-                  builder: (context, authService, child) {
-                    return Column(
-                      children: [
-                        // 카카오 로그인
-                        _SocialLoginButton(
-                          onPressed: authService.isLoading
-                              ? null
-                              : () => _handleSocialLogin(SocialProvider.kakao),
-                          backgroundColor: const Color(0xFFFEE500),
-                          textColor: const Color(0xFF191919),
-                          iconPath: 'assets/icons/kakao_icon.png',
-                          fallbackIcon: Icons.chat_bubble,
-                          label: '카카오로 시작하기',
-                        ),
-                        const SizedBox(height: 12),
-                        // 네이버 로그인
-                        _SocialLoginButton(
-                          onPressed: authService.isLoading
-                              ? null
-                              : () => _handleSocialLogin(SocialProvider.naver),
-                          backgroundColor: const Color(0xFF03C75A),
-                          textColor: Colors.white,
-                          iconPath: 'assets/icons/naver_icon.png',
-                          fallbackIcon: Icons.north,
-                          label: '네이버로 시작하기',
-                        ),
-                        const SizedBox(height: 12),
-                        // 구글 로그인
-                        _SocialLoginButton(
-                          onPressed: authService.isLoading
-                              ? null
-                              : () => _handleSocialLogin(SocialProvider.google),
-                          backgroundColor: Colors.white,
-                          textColor: Colors.black87,
-                          iconPath: 'assets/icons/google_icon.png',
-                          fallbackIcon: Icons.g_mobiledata,
-                          label: 'Google로 시작하기',
-                          border: Border.all(color: Colors.grey.shade300),
-                        ),
-                      ],
-                    );
-                  },
-                ),
-                const SizedBox(height: 24),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const Text(
-                      '계정이 없으신가요?',
-                      style: TextStyle(color: AppColors.textSecondary),
-                    ),
-                    TextButton(
-                      onPressed: () => Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const SignupScreen(),
-                        ),
-                      ),
-                      child: const Text(
-                        '회원가입',
-                        style: TextStyle(
-                          color: AppColors.primary,
-                          fontWeight: FontWeight.w600,
-                        ),
+                validator: (value) {
+                  if (value == null || value.isEmpty) return '비밀번호를 입력해주세요';
+                  if (value.length < 6) return '비밀번호는 6자 이상이어야 합니다';
+                  return null;
+                },
+              ),
+              const SizedBox(height: 24),
+              Consumer<AuthService>(
+                builder: (context, authService, child) {
+                  return ElevatedButton(
+                    onPressed: authService.isLoading ? null : _handleLogin,
+                    child: authService.isLoading
+                        ? const SizedBox(
+                            height: 20,
+                            width: 20,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Colors.white,
+                            ),
+                          )
+                        : const Text('로그인'),
+                  );
+                },
+              ),
+              const SizedBox(height: 24),
+              // 구분선
+              Row(
+                children: [
+                  Expanded(child: Divider(color: Colors.grey.shade300)),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: Text(
+                      '간편 로그인',
+                      style: TextStyle(
+                        color: Colors.grey.shade500,
+                        fontSize: 14,
                       ),
                     ),
-                  ],
-                ),
-              ],
-            ),
+                  ),
+                  Expanded(child: Divider(color: Colors.grey.shade300)),
+                ],
+              ),
+              const SizedBox(height: 24),
+              // 소셜 로그인 버튼들
+              Consumer<AuthService>(
+                builder: (context, authService, child) {
+                  return Column(
+                    children: [
+                      // 카카오 로그인
+                      _SocialLoginButton(
+                        onPressed: authService.isLoading
+                            ? null
+                            : () => _handleSocialLogin(SocialProvider.kakao),
+                        backgroundColor: const Color(0xFFFEE500),
+                        textColor: const Color(0xFF191919),
+                        iconPath: 'assets/icons/kakao_icon.png',
+                        fallbackIcon: Icons.chat_bubble,
+                        label: '카카오로 시작하기',
+                      ),
+                      const SizedBox(height: 12),
+                      // 네이버 로그인
+                      _SocialLoginButton(
+                        onPressed: authService.isLoading
+                            ? null
+                            : () => _handleSocialLogin(SocialProvider.naver),
+                        backgroundColor: const Color(0xFF03C75A),
+                        textColor: Colors.white,
+                        iconPath: 'assets/icons/naver_icon.png',
+                        fallbackIcon: Icons.north,
+                        label: '네이버로 시작하기',
+                      ),
+                      const SizedBox(height: 12),
+                      // 구글 로그인
+                      _SocialLoginButton(
+                        onPressed: authService.isLoading
+                            ? null
+                            : () => _handleSocialLogin(SocialProvider.google),
+                        backgroundColor: Colors.white,
+                        textColor: Colors.black87,
+                        iconPath: 'assets/icons/google_icon.png',
+                        fallbackIcon: Icons.g_mobiledata,
+                        label: 'Google로 시작하기',
+                        border: Border.all(color: Colors.grey.shade300),
+                      ),
+                    ],
+                  );
+                },
+              ),
+              const SizedBox(height: 24),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Text(
+                    '계정이 없으신가요?',
+                    style: TextStyle(color: AppColors.textSecondary),
+                  ),
+                  TextButton(
+                    onPressed: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const SignupScreen(),
+                      ),
+                    ),
+                    child: const Text(
+                      '회원가입',
+                      style: TextStyle(
+                        color: AppColors.primary,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
           ),
         ),
       ),

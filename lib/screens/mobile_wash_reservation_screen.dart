@@ -179,14 +179,18 @@ class _MobileWashReservationScreenState
   Widget build(BuildContext context) {
     final vehicleService = Provider.of<VehicleService>(context);
     final vehicles = vehicleService.vehicles;
+    final mediaQuery = MediaQuery.of(context);
+    final bottomPadding = mediaQuery.padding.bottom;
+
     return Scaffold(
-      backgroundColor: AppColors.background,
-      appBar: AppBar(
-        title: const Text('출장 세차 예약'),
-        backgroundColor: Colors.white,
-      ),
+      appBar: AppBar(title: const Text('출장 세차 예약')),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(24),
+        padding: EdgeInsets.only(
+          left: 24,
+          right: 24,
+          top: 24,
+          bottom: bottomPadding + 24,
+        ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [

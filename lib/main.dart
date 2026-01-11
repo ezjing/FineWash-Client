@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'services/auth_service.dart';
 import 'services/reservation_service.dart';
@@ -13,6 +14,23 @@ void main() {
 
   // 카카오 SDK 초기화 (네이티브 앱 키로 변경 필요)
   SocialAuthService.initKakao('f1370b8914ac0bdd538c9dfc7f7c2741');
+
+  // Edge-to-edge 디자인 설정
+  SystemChrome.setSystemUIOverlayStyle(
+    const SystemUiOverlayStyle(
+      // 상태바 투명 설정
+      statusBarColor: Colors.transparent,
+      statusBarIconBrightness: Brightness.dark,
+      statusBarBrightness: Brightness.light,
+      // 네비게이션 바 투명 설정 (Android)
+      systemNavigationBarColor: Colors.transparent,
+      systemNavigationBarIconBrightness: Brightness.dark,
+      systemNavigationBarDividerColor: Colors.transparent,
+    ),
+  );
+
+  // Edge-to-edge 모드 활성화
+  SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
 
   runApp(const FineWashApp());
 }
@@ -32,50 +50,10 @@ class FineWashApp extends StatelessWidget {
         title: '출장세차',
         debugShowCheckedModeBanner: false,
         builder: (context, child) {
-          // 화면별 SafeArea 설정
-          Widget buildSafeArea(Widget widget) {
-            // 현재 라우트 정보 가져오기
-            final route = ModalRoute.of(context);
-            final routeName = route?.settings.name;
-
-            // 특정 화면에서 SafeArea를 다르게 적용하려면 여기서 조건 추가
-            // 예시:
-            // - AppBar가 있는 화면: top SafeArea 제외 (AppBar가 자체적으로 처리)
-            // - 전체화면 화면: 모든 방향 SafeArea 적용
-            // - 기본: 하단만 SafeArea 적용 (안드로이드 네비게이션 바 대응)
-
-            bool topSafeArea = true;
-            bool bottomSafeArea = true;
-            bool leftSafeArea = false;
-            bool rightSafeArea = false;
-
-            // 화면별 조건 추가 예시
-            if (routeName != null) {
-              // AppBar가 있는 화면들은 top SafeArea 제외
-              if (routeName.contains('reservation') ||
-                  routeName.contains('shop') ||
-                  routeName.contains('my_page') ||
-                  routeName.contains('vehicle')) {
-                topSafeArea = false;
-              }
-
-              // 전체화면이 필요한 화면
-              if (routeName.contains('address_search')) {
-                topSafeArea = false;
-                bottomSafeArea = true;
-              }
-            }
-
-            return SafeArea(
-              top: topSafeArea,
-              bottom: bottomSafeArea,
-              left: leftSafeArea,
-              right: rightSafeArea,
-              child: widget,
-            );
-          }
-
-          return buildSafeArea(child ?? const SizedBox.shrink());
+          // Edge-to-edge 디자인을 위한 SafeArea 설정
+          // MaterialApp의 builder에서 전역적으로 처리하지 않고,
+          // 각 화면에서 필요에 따라 MediaQuery.padding을 사용하도록 변경
+          return child ?? const SizedBox.shrink();
         },
         theme: ThemeData(
           colorScheme: ColorScheme.fromSeed(
@@ -83,11 +61,17 @@ class FineWashApp extends StatelessWidget {
             brightness: Brightness.light,
           ),
           useMaterial3: true,
-          appBarTheme: const AppBarTheme(
+          appBarTheme: AppBarTheme(
             centerTitle: true,
             elevation: 0,
             backgroundColor: Colors.white,
             foregroundColor: AppColors.textPrimary,
+            // Edge-to-edge를 위한 시스템 UI 오버레이 스타일
+            systemOverlayStyle: const SystemUiOverlayStyle(
+              statusBarColor: Colors.transparent,
+              statusBarIconBrightness: Brightness.dark,
+              statusBarBrightness: Brightness.light,
+            ),
           ),
           elevatedButtonTheme: ElevatedButtonThemeData(
             style: ElevatedButton.styleFrom(

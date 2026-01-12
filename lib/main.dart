@@ -12,22 +12,8 @@ import 'utils/app_colors.dart';
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // 카카오 SDK 초기화 (네이티브 앱 키로 변경 필요)
+  // 카카오 SDK 초기화
   SocialAuthService.initKakao('f1370b8914ac0bdd538c9dfc7f7c2741');
-
-  // Edge-to-edge 디자인 설정
-  SystemChrome.setSystemUIOverlayStyle(
-    const SystemUiOverlayStyle(
-      // 상태바 투명 설정
-      statusBarColor: Colors.transparent,
-      statusBarIconBrightness: Brightness.dark,
-      statusBarBrightness: Brightness.light,
-      // 네비게이션 바 투명 설정 (Android)
-      systemNavigationBarColor: Colors.transparent,
-      systemNavigationBarIconBrightness: Brightness.dark,
-      systemNavigationBarDividerColor: Colors.transparent,
-    ),
-  );
 
   // Edge-to-edge 모드 활성화
   SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
@@ -50,9 +36,17 @@ class FineWashApp extends StatelessWidget {
         title: '출장세차',
         debugShowCheckedModeBanner: false,
         builder: (context, child) {
-          // Edge-to-edge 디자인을 위한 SafeArea 설정
-          // MaterialApp의 builder에서 전역적으로 처리하지 않고,
-          // 각 화면에서 필요에 따라 MediaQuery.padding을 사용하도록 변경
+          // 스테이터스 바, 네비게이션 바 스타일 설정 (모든 화면에 적용)
+          SystemChrome.setSystemUIOverlayStyle(
+            SystemUiOverlayStyle(
+              statusBarColor: Colors.transparent,
+              statusBarIconBrightness: Brightness.dark,
+              statusBarBrightness: Brightness.light,
+              systemNavigationBarColor: Colors.grey[300],
+              systemNavigationBarIconBrightness: Brightness.dark,
+              systemNavigationBarDividerColor: Colors.transparent,
+            ),
+          );
           return child ?? const SizedBox.shrink();
         },
         theme: ThemeData(
@@ -66,12 +60,6 @@ class FineWashApp extends StatelessWidget {
             elevation: 0,
             backgroundColor: Colors.white,
             foregroundColor: AppColors.textPrimary,
-            // Edge-to-edge를 위한 시스템 UI 오버레이 스타일
-            systemOverlayStyle: const SystemUiOverlayStyle(
-              statusBarColor: Colors.transparent,
-              statusBarIconBrightness: Brightness.dark,
-              statusBarBrightness: Brightness.light,
-            ),
           ),
           elevatedButtonTheme: ElevatedButtonThemeData(
             style: ElevatedButton.styleFrom(

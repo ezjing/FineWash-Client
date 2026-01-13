@@ -4,6 +4,8 @@ import '../models/service_type_model.dart';
 import '../models/wash_location_model.dart';
 import '../services/vehicle_service.dart';
 import '../services/reservation_service.dart';
+import '../services/payment_service.dart';
+import '../services/auth_service.dart';
 import '../utils/app_colors.dart';
 import 'vehicle_registration_screen.dart';
 import 'reservation_confirmation_screen.dart';
@@ -45,6 +47,7 @@ class _PartnerWashReservationScreenState
   }
 
   Future<void> _handleReservation() async {
+    // 입력 검증
     if (_selectedVehicleId == null ||
         _selectedLocationId == null ||
         _selectedDate == null ||
@@ -57,38 +60,146 @@ class _PartnerWashReservationScreenState
       );
       return;
     }
+
     final selectedService = partnerWashServices.firstWhere(
       (s) => s.id == _selectedServiceId,
     );
+    final authService = Provider.of<AuthService>(context, listen: false);
     final reservationService = Provider.of<ReservationService>(
       context,
       listen: false,
     );
     final vehicleService = Provider.of<VehicleService>(context, listen: false);
-    final dateStr =
-        '${_selectedDate!.year}-${_selectedDate!.month.toString().padLeft(2, '0')}-${_selectedDate!.day.toString().padLeft(2, '0')}';
-    // TODO: busDtlIdx는 실제로는 선택한 세차장의 bus_dtl_idx를 사용해야 함
-    final success = await reservationService.saveLogic2(
-      vehicleId: _selectedVehicleId!,
-      mainOption: '방문',
-      midOption: selectedService.name,
-      subOption: selectedService.description,
-      date: dateStr,
-      time: _selectedTime!,
-      busDtlIdx: int.tryParse(_selectedLocationId ?? '0') ?? 0,
-    );
-    if (success && mounted) {
-      final vehicle = vehicleService.getVehicleById(_selectedVehicleId!);
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(
-          builder: (_) => ReservationConfirmationScreen(
-            reservation: reservationService.currentReservation!,
-            vehicle: vehicle!,
-          ),
+
+    // 사용자 정보 가져오기
+    final user = authService.currentUser;
+    if (user == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('로그인이 필요합니다.'),
+          backgroundColor: AppColors.warning,
         ),
       );
+      return;
     }
+
+    // 주문 고유번호 생성
+    final merchantUid = PaymentService.generateMerchantUid();
+
+    // 결제 요청
+    await PaymentService.requestPayment(
+      context: context,
+      amount: selectedService.price,
+      merchantUid: merchantUid,
+      name: '${selectedService.name} - 제휴 세차장',
+      buyerName: user.name ?? '고객',
+      buyerTel: user.phone ?? '010-0000-0000',
+      buyerEmail: user.email ?? 'customer@example.com',
+      callback: (result) async {
+        // 결제 결과 처리
+        if (PaymentService.verifyPaymentResult(result)) {
+          // 백엔드 서버에 결제 검증 요청
+          final impUid = result['imp_uid'] as String?;
+          if (impUid == null) {
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('결제 정보를 확인할 수 없습니다. 고객센터로 문의해주세요.'),
+                  backgroundColor: AppColors.warning,
+                ),
+              );
+            }
+            return;
+          }
+
+          // 로딩 표시
+          if (mounted) {
+            showDialog(
+              context: context,
+              barrierDismissible: false,
+              builder: (context) => const Center(
+                child: CircularProgressIndicator(),
+              ),
+            );
+          }
+
+          // 백엔드 결제 검증
+          final isVerified = await PaymentService.verifyPaymentWithBackend(
+            impUid: impUid,
+            merchantUid: merchantUid,
+            amount: selectedService.price,
+          );
+
+          // 로딩 닫기
+          if (mounted) {
+            Navigator.pop(context);
+          }
+
+          if (!isVerified) {
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('결제 검증에 실패했습니다. 고객센터로 문의해주세요.'),
+                  backgroundColor: AppColors.warning,
+                  duration: Duration(seconds: 3),
+                ),
+              );
+            }
+            return;
+          }
+
+          // 결제 검증 성공 - 예약 저장
+          final dateStr =
+              '${_selectedDate!.year}-${_selectedDate!.month.toString().padLeft(2, '0')}-${_selectedDate!.day.toString().padLeft(2, '0')}';
+          // TODO: busDtlIdx는 실제로는 선택한 세차장의 bus_dtl_idx를 사용해야 함
+          final success = await reservationService.saveLogic2(
+            vehicleId: _selectedVehicleId!,
+            mainOption: '방문',
+            midOption: selectedService.name,
+            subOption: selectedService.description,
+            date: dateStr,
+            time: _selectedTime!,
+            busDtlIdx: int.tryParse(_selectedLocationId ?? '0') ?? 0,
+            impUid: impUid,
+            merchantUid: merchantUid,
+            paymentAmount: selectedService.price,
+          );
+
+          if (success && mounted) {
+            final vehicle = vehicleService.getVehicleById(_selectedVehicleId!);
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(
+                builder: (_) => ReservationConfirmationScreen(
+                  reservation: reservationService.currentReservation!,
+                  vehicle: vehicle!,
+                ),
+              ),
+            );
+          } else if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('예약 저장에 실패했습니다. 고객센터로 문의해주세요.'),
+                backgroundColor: AppColors.warning,
+              ),
+            );
+          }
+        } else {
+          // 결제 실패
+          if (mounted) {
+            final errorMsg =
+                result['error_msg'] ?? result['message'] ?? '결제에 실패했습니다.';
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(errorMsg),
+                backgroundColor: AppColors.warning,
+                duration: const Duration(seconds: 3),
+              ),
+            );
+          }
+        }
+      },
+    );
   }
 
   @override

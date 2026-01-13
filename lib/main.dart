@@ -42,7 +42,7 @@ class FineWashApp extends StatelessWidget {
               statusBarColor: Colors.transparent,
               statusBarIconBrightness: Brightness.dark,
               statusBarBrightness: Brightness.light,
-              systemNavigationBarColor: Colors.grey[300],
+              systemNavigationBarColor: Colors.grey[200],
               systemNavigationBarIconBrightness: Brightness.dark,
               systemNavigationBarDividerColor: Colors.transparent,
             ),

@@ -44,11 +44,14 @@ class ReservationService extends ChangeNotifier {
     required String date,
     required String time,
     required String vehicleLocation,
+    String? impUid,
+    String? merchantUid,
+    int? paymentAmount,
   }) async {
     _isLoading = true;
     notifyListeners();
     try {
-      final response = await ApiService.post('/reservations', {
+      final requestData = {
         'vehicleId': vehicleId,
         'main_option': mainOption,
         'mid_option': midOption,
@@ -56,7 +59,20 @@ class ReservationService extends ChangeNotifier {
         'date': date,
         'time': time,
         'vehicle_location': vehicleLocation,
-      });
+      };
+
+      // 결제 정보가 있으면 추가
+      if (impUid != null) {
+        requestData['imp_uid'] = impUid;
+      }
+      if (merchantUid != null) {
+        requestData['merchant_uid'] = merchantUid;
+      }
+      if (paymentAmount != null) {
+        requestData['payment_amount'] = paymentAmount;
+      }
+
+      final response = await ApiService.post('/reservations', requestData);
       if (response['success'] == true && response['reservation'] != null) {
         final newReservation = ReservationModel.fromJson(
           response['reservation'],
@@ -86,11 +102,14 @@ class ReservationService extends ChangeNotifier {
     required String date,
     required String time,
     required int busDtlIdx,
+    String? impUid,
+    String? merchantUid,
+    int? paymentAmount,
   }) async {
     _isLoading = true;
     notifyListeners();
     try {
-      final response = await ApiService.post('/reservations', {
+      final requestData = {
         'vehicleId': vehicleId,
         'main_option': mainOption,
         'mid_option': midOption,
@@ -98,7 +117,20 @@ class ReservationService extends ChangeNotifier {
         'date': date,
         'time': time,
         'bus_dtl_idx': busDtlIdx,
-      });
+      };
+
+      // 결제 정보가 있으면 추가
+      if (impUid != null) {
+        requestData['imp_uid'] = impUid;
+      }
+      if (merchantUid != null) {
+        requestData['merchant_uid'] = merchantUid;
+      }
+      if (paymentAmount != null) {
+        requestData['payment_amount'] = paymentAmount;
+      }
+
+      final response = await ApiService.post('/reservations', requestData);
       if (response['success'] == true && response['reservation'] != null) {
         final newReservation = ReservationModel.fromJson(
           response['reservation'],

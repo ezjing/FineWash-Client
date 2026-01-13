@@ -29,6 +29,9 @@ dependencies:
   google_sign_in: ^6.2.1 # 구글 로그인
   webview_flutter: ^4.13.0
 
+  # 결제
+  portone_flutter: ^0.12.1
+
   # 유틸리티
   uuid: ^4.3.3
 

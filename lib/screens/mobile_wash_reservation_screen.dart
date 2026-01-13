@@ -121,7 +121,57 @@ class _MobileWashReservationScreenState
       callback: (result) async {
         // 결제 결과 처리
         if (PaymentService.verifyPaymentResult(result)) {
-          // 결제 성공 - 예약 저장
+          // 백엔드 서버에 결제 검증 요청
+          final impUid = result['imp_uid'] as String?;
+          if (impUid == null) {
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('결제 정보를 확인할 수 없습니다. 고객센터로 문의해주세요.'),
+                  backgroundColor: AppColors.warning,
+                ),
+              );
+            }
+            return;
+          }
+
+          // 로딩 표시
+          if (mounted) {
+            showDialog(
+              context: context,
+              barrierDismissible: false,
+              builder: (context) => const Center(
+                child: CircularProgressIndicator(),
+              ),
+            );
+          }
+
+          // 백엔드 결제 검증
+          final isVerified = await PaymentService.verifyPaymentWithBackend(
+            impUid: impUid,
+            merchantUid: merchantUid,
+            amount: selectedService.price,
+          );
+
+          // 로딩 닫기
+          if (mounted) {
+            Navigator.pop(context);
+          }
+
+          if (!isVerified) {
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('결제 검증에 실패했습니다. 고객센터로 문의해주세요.'),
+                  backgroundColor: AppColors.warning,
+                  duration: Duration(seconds: 3),
+                ),
+              );
+            }
+            return;
+          }
+
+          // 결제 검증 성공 - 예약 저장
           final fullAddress = _detailAddressController.text.isNotEmpty
               ? '${_selectedAddress!.fullAddress} ${_detailAddressController.text}'
               : _selectedAddress!.fullAddress;
@@ -136,6 +186,9 @@ class _MobileWashReservationScreenState
             date: dateStr,
             time: _selectedTime!,
             vehicleLocation: fullAddress,
+            impUid: impUid,
+            merchantUid: merchantUid,
+            paymentAmount: selectedService.price,
           );
 
           if (success && mounted) {

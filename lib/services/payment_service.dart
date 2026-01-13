@@ -6,7 +6,7 @@ import 'api_service.dart';
 
 class PaymentService {
   // 포트원 가맹점 식별코드 (실제 운영 시 환경변수로 관리)
-  static const String _impCode = 'imp19424728';
+  static const String _impCode = 'imp20751052';
 
   /// 포트원 결제 요청
   static Future<void> requestPayment({
@@ -20,7 +20,7 @@ class PaymentService {
     required Function(Map<String, dynamic>) callback,
   }) async {
     final paymentData = PaymentData(
-      pg: 'kcp', // PG사
+      pg: 'html5_inicis', // 이니시스
       payMethod: 'card', // 결제수단
       merchantUid: merchantUid, // 주문번호
       name: name, // 상품명
@@ -85,9 +85,7 @@ class PaymentService {
                   foregroundColor: Colors.black,
                   elevation: 0,
                 ),
-                initialChild: const Center(
-                  child: CircularProgressIndicator(),
-                ),
+                initialChild: const Center(child: CircularProgressIndicator()),
                 userCode: _impCode,
                 data: paymentData,
                 callback: (Map<String, String> result) {
@@ -108,11 +106,11 @@ class PaymentService {
   }
 
   /// 백엔드 서버에 결제 검증 요청
-  /// 
+  ///
   /// [impUid] 아임포트 결제 고유번호
   /// [merchantUid] 주문 고유번호
   /// [amount] 결제 금액
-  /// 
+  ///
   /// Returns: 검증 성공 여부
   static Future<bool> verifyPaymentWithBackend({
     required String impUid,
@@ -140,14 +138,15 @@ class PaymentService {
   }
 
   /// 결제 결과 검증
-  /// 
+  ///
   /// 클라이언트 측 기본 검증만 수행
   /// 실제 결제 검증은 백엔드 서버에서 수행해야 함
   static bool verifyPaymentResult(Map<String, dynamic> result) {
     // portone_flutter는 imp_success를 String으로 반환
-    final success = result['imp_success'] == 'true' || result['imp_success'] == true;
+    final success =
+        result['imp_success'] == 'true' || result['imp_success'] == true;
     final errorCode = result['error_code'];
-    
+
     return success && (errorCode == null || errorCode.toString().isEmpty);
   }
 }

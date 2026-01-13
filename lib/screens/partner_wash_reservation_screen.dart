@@ -117,9 +117,8 @@ class _PartnerWashReservationScreenState
             showDialog(
               context: context,
               barrierDismissible: false,
-              builder: (context) => const Center(
-                child: CircularProgressIndicator(),
-              ),
+              builder: (context) =>
+                  const Center(child: CircularProgressIndicator()),
             );
           }
 

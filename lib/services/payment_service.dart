@@ -2,11 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:portone_flutter/iamport_payment.dart';
 import 'package:portone_flutter/model/payment_data.dart';
 import 'package:uuid/uuid.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'api_service.dart';
 
 class PaymentService {
-  // 포트원 가맹점 식별코드 (실제 운영 시 환경변수로 관리)
-  static const String _impCode = 'imp20751052';
+  // 포트원 가맹점 식별코드 (환경변수에서 로드)
+  static String get _impCode {
+    return dotenv.get('PORTONE_IMP_CODE', fallback: 'imp20751052');
+  }
 
   /// 포트원 결제 요청
   static Future<void> requestPayment({

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'services/auth_service.dart';
 import 'services/reservation_service.dart';
 import 'services/vehicle_service.dart';
@@ -9,8 +10,11 @@ import 'screens/login_screen.dart';
 import 'screens/home_screen.dart';
 import 'utils/app_colors.dart';
 
-void main() {
+void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // 환경변수 파일 로드
+  await dotenv.load(fileName: '.env');
 
   // 카카오 SDK 초기화
   SocialAuthService.initKakao('f1370b8914ac0bdd538c9dfc7f7c2741');

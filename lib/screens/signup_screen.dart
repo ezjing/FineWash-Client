@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../services/auth_service.dart';
 import '../utils/app_colors.dart';
+import 'address_search_screen.dart';
 
 class SignupScreen extends StatefulWidget {
   const SignupScreen({super.key});
@@ -18,6 +19,9 @@ class _SignupScreenState extends State<SignupScreen> {
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
   bool _obscurePassword = true;
+  String _gender = 'M';
+  final _addressController = TextEditingController();
+  final _addressDetailController = TextEditingController();
 
   @override
   void dispose() {
@@ -26,6 +30,8 @@ class _SignupScreenState extends State<SignupScreen> {
     _phoneController.dispose();
     _passwordController.dispose();
     _confirmPasswordController.dispose();
+    _addressController.dispose();
+    _addressDetailController.dispose();
     super.dispose();
   }
 
@@ -37,8 +43,34 @@ class _SignupScreenState extends State<SignupScreen> {
         email: _emailController.text.trim(),
         phone: _phoneController.text.trim(),
         password: _passwordController.text,
+        gender: _gender,
+        address: _addressController.text.trim().isEmpty ? null : _addressController.text.trim(),
+        addressDetail: _addressDetailController.text.trim().isEmpty ? null : _addressDetailController.text.trim(),
       );
-      if (success && mounted) Navigator.pop(context);
+      if (success && mounted) {
+        // 완료 다이얼로그를 보여주고 사용자가 확인하면 화면을 닫음
+        await showDialog(
+          context: context,
+          barrierDismissible: false, // 확인을 반드시 누르게 함
+          builder: (ctx) => AlertDialog(
+            title: const Text('회원가입'),
+            content: const Text('회원가입이 완료되었습니다.'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(ctx).pop(), // 다이얼로그 닫기
+                child: const Text('확인'),
+              ),
+            ],
+          ),
+        );
+        if (mounted) Navigator.pop(context); // 가입 화면 닫기
+      }
+      else {
+        if (mounted) {
+          final error = authService.lastError ?? '회원가입에 실패했습니다. 다시 시도해주세요.';
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(error), backgroundColor: Colors.red));
+        }
+      }
     }
   }
 
@@ -173,6 +205,53 @@ class _SignupScreenState extends State<SignupScreen> {
                     ? '비밀번호가 일치하지 않습니다'
                     : null,
               ),
+              const SizedBox(height: 16),
+              // Gender selection
+	            Row(
+	              children: [
+	                Expanded(
+	                  child: ListTile(
+	                    contentPadding: EdgeInsets.zero,
+	                    title: const Text('남'),
+	                    leading: Radio<String>(
+	                      value: 'M',
+	                      groupValue: _gender,
+	                      onChanged: (v) => setState(() => _gender = v!),
+	                    ),
+	                  ),
+	                ),
+	                Expanded(
+	                  child: ListTile(
+	                    contentPadding: EdgeInsets.zero,
+	                    title: const Text('여'),
+	                    leading: Radio<String>(
+	                      value: 'F',
+	                      groupValue: _gender,
+	                      onChanged: (v) => setState(() => _gender = v!),
+	                    ),
+	                  ),
+	                ),
+	              ],
+	            ),
+	          const SizedBox(height: 8),
+                // Address search (Daum postcode)
+                TextFormField(
+                  controller: _addressController,
+                  readOnly: true,
+                  onTap: () async {
+                    final result = await Navigator.push(context, MaterialPageRoute(builder: (_) => const AddressSearchScreen()));
+                    if (result != null) {
+                      setState(() => _addressController.text = (result as dynamic).fullAddress as String);
+                    }
+                  },
+                  decoration: const InputDecoration(labelText: '주소', hintText: '주소를 검색하세요', prefixIcon: Icon(Icons.location_on_outlined)),
+                ),
+                const SizedBox(height: 8),
+                TextFormField(controller: _addressDetailController, decoration: const InputDecoration(labelText: '상세주소', hintText: '상세주소를 입력하세요', prefixIcon: Icon(Icons.edit_outlined))),
+                const SizedBox(height: 16),                
+                Consumer<AuthService>(builder: (context, authService, child) => ElevatedButton(onPressed: authService.isLoading ? null : _handleSignup, child: authService.isLoading ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white)) : const Text('가입하기'))),
+                const SizedBox(height: 16),
+                Row(mainAxisAlignment: MainAxisAlignment.center, children: [const Text('이미 계정이 있으신가요?', style: TextStyle(color: AppColors.textSecondary)), TextButton(onPressed: () => Navigator.pop(context), child: const Text('로그인', style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.w600)))]),
               const SizedBox(height: 32),
               Consumer<AuthService>(
                 builder: (context, authService, child) => ElevatedButton(

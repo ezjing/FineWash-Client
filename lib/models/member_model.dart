@@ -9,10 +9,11 @@ class MemberModel {
   final String? gender; // M: 남성, F: 여성, N: 미선택
   final String? email;
   final String? socialType;
+  final String? socialId;
   final DateTime? createdDate;
   final DateTime? updateDate;
 
-  MemberModel({
+  MemberModel({ 
     required this.memIdx,
     this.busMstIdx,
     this.userId,
@@ -23,6 +24,7 @@ class MemberModel {
     this.gender,
     this.email,
     this.socialType,
+    this.socialId,
     this.createdDate,
     this.updateDate,
   });
@@ -39,6 +41,7 @@ class MemberModel {
       gender: json['gender'],
       email: json['email'],
       socialType: json['socialType'] ?? json['social_type'],
+      socialId: json['socialId'] ?? json['social_id'],
       createdDate: json['createdDate'] != null
           ? DateTime.parse(json['createdDate'])
           : json['created_date'] != null
@@ -70,6 +73,8 @@ class MemberModel {
       'email': email,
       'socialType': socialType,
       'social_type': socialType,
+      'socialId' : socialId,
+      'social_id' : socialId,    
       'createdDate': createdDate?.toIso8601String(),
       'created_date': createdDate?.toIso8601String(),
       'updateDate': updateDate?.toIso8601String(),
@@ -88,6 +93,7 @@ class MemberModel {
     String? gender,
     String? email,
     String? socialType,
+    String? socialId,
     DateTime? createdDate,
     DateTime? updateDate,
   }) {
@@ -102,6 +108,7 @@ class MemberModel {
       gender: gender ?? this.gender,
       email: email ?? this.email,
       socialType: socialType ?? this.socialType,
+      socialId: socialId ?? this.socialId,
       createdDate: createdDate ?? this.createdDate,
       updateDate: updateDate ?? this.updateDate,
     );

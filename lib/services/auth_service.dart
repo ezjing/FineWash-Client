@@ -1,3 +1,4 @@
+
 import 'package:flutter/foundation.dart';
 import '../models/member_model.dart';
 import 'api_service.dart';
@@ -7,6 +8,8 @@ class AuthService extends ChangeNotifier {
   MemberModel? _currentUser;
   bool _isLoading = false;
   SocialProvider? _socialProvider;
+  String? _lastError;
+  String? get lastError => _lastError;
 
   MemberModel? get currentUser => _currentUser;
   bool get isAuthenticated => _currentUser != null;
@@ -30,16 +33,9 @@ class AuthService extends ChangeNotifier {
       notifyListeners();
       return true;
     } catch (e) {
-      // 개발 환경에서는 Mock 로그인 허용
-      _currentUser = MemberModel(
-        memIdx: 1,
-        name: '김민수',
-        email: email,
-        phone: '010-1234-5678',
-      );
       _isLoading = false;
       notifyListeners();
-      return true;
+      return false;
     }
   }
 
@@ -113,34 +109,46 @@ class AuthService extends ChangeNotifier {
     required String email,
     required String phone,
     required String password,
+    String? gender,
+    String? address,
+    String? addressDetail,
   }) async {
     _isLoading = true;
+    _lastError = null;
     notifyListeners();
-
     try {
-      final response = await ApiService.post('/auth/signup', {
+      final body = {
         'name': name,
         'email': email,
         'phone': phone,
         'password': password,
-      });
+        if (gender != null) 'gender': gender,
+        if (address != null) 'address': address,
+        if (addressDetail != null) 'address_detail': addressDetail,
+      };
+      final response = await ApiService.post('/auth/signup', body);
       if (response['token'] != null) {
         await ApiService.setToken(response['token']);
       }
       _currentUser = MemberModel.fromJson(response['user']);
+      _lastError = null;
       _isLoading = false;
       notifyListeners();
       return true;
     } catch (e) {
+      final msg = e.toString().replaceAll(RegExp(r'Exception:\s*', caseSensitive: false), '').trim();
+      _lastError = msg;
       _currentUser = MemberModel(
         memIdx: DateTime.now().millisecondsSinceEpoch,
         name: name,
         email: email,
         phone: phone,
+        address: address,
+        gender: gender,
       );
       _isLoading = false;
       notifyListeners();
-      return true;
+      return false;
     }
   }
 

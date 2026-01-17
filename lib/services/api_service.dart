@@ -6,7 +6,7 @@ class ApiService {
   // 서버 URL (개발 환경에 맞게 수정)
   // Android 에뮬레이터: http://10.0.2.2:3000/api
   // iOS 시뮬레이터: http://localhost:3000/api
-  static const String baseUrl = 'http://localhost:3000/api';
+  static const String baseUrl = 'http://10.0.2.2:3000/api';
   
   static Future<String?> getToken() async {
     final prefs = await SharedPreferences.getInstance();

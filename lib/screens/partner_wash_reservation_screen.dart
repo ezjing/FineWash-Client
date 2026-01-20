@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../models/service_type_model.dart';
-import '../models/wash_location_model.dart';
 import '../services/vehicle_service.dart';
 import '../services/reservation_service.dart';
 import '../services/payment_service.dart';
@@ -25,6 +24,35 @@ class _PartnerWashReservationScreenState
   String _selectedServiceId = 'basic';
   DateTime? _selectedDate;
   String? _selectedTime;
+
+  // 더미 세차장 데이터 (서버 API 연동 전 임시 사용)
+  final List<Map<String, dynamic>> _dummyWashLocations = [
+    {
+      'id': '1',
+      'name': '클린세차장 강남점',
+      'address': '서울 강남구 테헤란로 123',
+      'distance': '1.2km',
+      'rating': 4.8,
+      'reviewCount': 245,
+    },
+    {
+      'id': '2',
+      'name': '프리미엄세차 역삼점',
+      'address': '서울 강남구 역삼동 456',
+      'distance': '2.5km',
+      'rating': 4.6,
+      'reviewCount': 189,
+    },
+    {
+      'id': '3',
+      'name': '스피드세차 선릉점',
+      'address': '서울 강남구 선릉로 789',
+      'distance': '3.1km',
+      'rating': 4.7,
+      'reviewCount': 312,
+    },
+  ];
+
   final List<String> _availableTimes = [
     '09:00',
     '10:00',
@@ -299,35 +327,37 @@ class _PartnerWashReservationScreenState
               ),
             ),
             const SizedBox(height: 12),
-            ...dummyWashLocations.map(
+            // TODO: 실제 세차장 목록을 서버 API에서 가져와야 함
+            // 현재는 더미 데이터를 직접 정의하여 사용
+            ..._dummyWashLocations.map(
               (location) => Padding(
                 padding: const EdgeInsets.only(bottom: 12),
                 child: InkWell(
                   onTap: () =>
-                      setState(() => _selectedLocationId = location.id),
+                      setState(() => _selectedLocationId = location['id']),
                   child: Container(
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
-                      color: _selectedLocationId == location.id
+                      color: _selectedLocationId == location['id']
                           ? AppColors.secondary.withOpacity(0.1)
                           : Colors.white,
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(
-                        color: _selectedLocationId == location.id
+                        color: _selectedLocationId == location['id']
                             ? AppColors.secondary
                             : AppColors.border,
-                        width: _selectedLocationId == location.id ? 2 : 1,
+                        width: _selectedLocationId == location['id'] ? 2 : 1,
                       ),
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          location.name,
+                          location['name'],
                           style: TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.w600,
-                            color: _selectedLocationId == location.id
+                            color: _selectedLocationId == location['id']
                                 ? AppColors.secondary
                                 : AppColors.textPrimary,
                           ),
@@ -343,7 +373,7 @@ class _PartnerWashReservationScreenState
                             const SizedBox(width: 4),
                             Expanded(
                               child: Text(
-                                location.address,
+                                location['address'],
                                 style: const TextStyle(
                                   fontSize: 14,
                                   color: AppColors.textSecondary,
@@ -365,7 +395,7 @@ class _PartnerWashReservationScreenState
                                 ),
                                 const SizedBox(width: 4),
                                 Text(
-                                  '${location.rating} (${location.reviewCount})',
+                                  '${location['rating']} (${location['reviewCount']})',
                                   style: const TextStyle(
                                     fontSize: 14,
                                     color: AppColors.textSecondary,
@@ -374,7 +404,7 @@ class _PartnerWashReservationScreenState
                               ],
                             ),
                             Text(
-                              location.distance,
+                              location['distance'],
                               style: const TextStyle(
                                 fontSize: 14,
                                 fontWeight: FontWeight.w600,

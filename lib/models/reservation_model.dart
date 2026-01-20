@@ -10,6 +10,9 @@ class ReservationModel {
   final String contractYn; // 계약체결YN (Y: 승낙, N: 취소)
   final String? date; // 예약일자
   final String? time; // 예약시간
+  final String? impUid; // 포트원 결제 고유번호
+  final String? merchantUid; // 주문 고유번호
+  final int? paymentAmount; // 결제 금액
   final DateTime? createdDate;
   final DateTime? updateDate;
 
@@ -25,6 +28,9 @@ class ReservationModel {
     this.contractYn = 'Y',
     this.date,
     this.time,
+    this.impUid,
+    this.merchantUid,
+    this.paymentAmount,
     this.createdDate,
     this.updateDate,
   });
@@ -42,6 +48,9 @@ class ReservationModel {
       contractYn: json['contractYn'] ?? json['contract_yn'] ?? 'Y',
       date: json['date'],
       time: json['time'],
+      impUid: json['impUid'] ?? json['imp_uid'],
+      merchantUid: json['merchantUid'] ?? json['merchant_uid'],
+      paymentAmount: json['paymentAmount'] ?? json['payment_amount'],
       createdDate: json['createdAt'] != null
           ? DateTime.parse(json['createdAt'])
           : json['created_date'] != null
@@ -81,6 +90,12 @@ class ReservationModel {
       'contract_yn': contractYn,
       'date': date,
       'time': time,
+      'impUid': impUid,
+      'imp_uid': impUid,
+      'merchantUid': merchantUid,
+      'merchant_uid': merchantUid,
+      'paymentAmount': paymentAmount,
+      'payment_amount': paymentAmount,
       'createdAt': createdDate?.toIso8601String(),
       'created_date': createdDate?.toIso8601String(),
       'createdDate': createdDate?.toIso8601String(),

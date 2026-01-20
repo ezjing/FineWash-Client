@@ -12,10 +12,10 @@ lib/
 ├── models/                # 데이터 모델
 │   ├── booking_model.dart
 │   ├── product_model.dart
+│   ├── reservation_model.dart
 │   ├── service_type_model.dart
 │   ├── user_model.dart
-│   ├── vehicle_model.dart
-│   └── wash_location_model.dart
+│   └── vehicle_model.dart
 ├── screens/               # 화면 UI
 │   ├── booking_confirmation_screen.dart
 │   ├── home_screen.dart

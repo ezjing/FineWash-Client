@@ -11,7 +11,7 @@ class VehicleService extends ChangeNotifier {
   bool get hasVehicles => _vehicles.isNotEmpty;
 
   // 차량 목록 조회 (SearchLogic1)
-  Future<void> searchLogic1() async {
+  Future<bool> searchLogic1() async {
     _isLoading = true;
     notifyListeners();
     try {
@@ -20,12 +20,20 @@ class VehicleService extends ChangeNotifier {
         _vehicles = (response['vehicles'] as List)
             .map((v) => VehicleModel.fromJson(v))
             .toList();
+        _isLoading = false;
+        notifyListeners();
+        return true;
       }
+      _isLoading = false;
+      notifyListeners();
+      return false;
     } catch (e) {
-      // 오프라인 모드
+      _isLoading = false;
+      notifyListeners();
+      // 에러 로깅 (디버깅용)
+      debugPrint('차량 목록 조회 실패: $e');
+      return false;
     }
-    _isLoading = false;
-    notifyListeners();
   }
 
   // 차량 등록 (SaveLogic1)

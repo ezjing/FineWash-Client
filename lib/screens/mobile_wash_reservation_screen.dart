@@ -40,6 +40,16 @@ class _MobileWashReservationScreenState
   ];
 
   @override
+  void initState() {
+    super.initState();
+    // 화면 진입 시 차량 목록 조회
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final vehicleService = Provider.of<VehicleService>(context, listen: false);
+      vehicleService.searchLogic1();
+    });
+  }
+
+  @override
   void dispose() {
     _addressController.dispose();
     _detailAddressController.dispose();
@@ -264,7 +274,12 @@ class _MobileWashReservationScreenState
                       builder: (_) => const VehicleRegistrationScreen(),
                     ),
                   );
-                  if (result == true) setState(() {});
+                  if (result == true) {
+                    // 차량 등록 후 목록 새로고침
+                    final vehicleService = Provider.of<VehicleService>(context, listen: false);
+                    await vehicleService.searchLogic1();
+                    setState(() {});
+                  }
                 },
                 child: Container(
                   padding: const EdgeInsets.all(20),

@@ -699,16 +699,56 @@ class _PartnerWashReservationScreenState
                 value: _selectedVehicleId,
                 hint: const Text('차량을 선택하세요'),
                 isExpanded: true,
-                items: vehicles
-                    .map(
-                      (v) => DropdownMenuItem<int>(
-                        value: v.vehIdx,
-                        child: Text(v.displayName),
+                items: [
+                  ...vehicles
+                      .map(
+                        (v) => DropdownMenuItem<int>(
+                          value: v.vehIdx,
+                          child: Text(v.displayName),
+                        ),
+                      )
+                      .toList(),
+                  const DropdownMenuItem<int>(
+                    value: -1,
+                    child: Row(
+                      children: [
+                        Icon(Icons.add, color: AppColors.secondary, size: 20),
+                        SizedBox(width: 8),
+                        Text(
+                          '신규 차량 등록',
+                          style: TextStyle(
+                            color: AppColors.secondary,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+                onChanged: (value) async {
+                  if (value == -1) {
+                    // 신규 차량 등록 화면으로 이동
+                    final result = await Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const VehicleRegistrationScreen(),
                       ),
-                    )
-                    .toList(),
-                onChanged: (value) =>
-                    setState(() => _selectedVehicleId = value),
+                    );
+                    if (result == true) {
+                      // 차량 등록 후 목록 새로고침
+                      final vehicleService = Provider.of<VehicleService>(context, listen: false);
+                      await vehicleService.searchLogic1();
+                      // 새로 등록한 차량을 자동으로 선택
+                      if (vehicleService.vehicles.isNotEmpty) {
+                        setState(() {
+                          _selectedVehicleId = vehicleService.vehicles.last.vehIdx;
+                        });
+                      }
+                    }
+                  } else {
+                    setState(() => _selectedVehicleId = value);
+                  }
+                },
               ),
             ),
           ),

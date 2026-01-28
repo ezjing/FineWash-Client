@@ -10,7 +10,7 @@ class MemberModel {
   final String? email;
   final String? socialType;
   final String? socialId;
-  final String? memberType; // U: 고객, B: 사업자
+  final String? memberType; // C: 고객, B: 사업자
   final DateTime? createdDate;
   final DateTime? updateDate;
 
@@ -44,7 +44,7 @@ class MemberModel {
       email: json['email'],
       socialType: json['socialType'],
       socialId: json['socialId'],
-      memberType: json['memberType'] ?? 'U',
+      memberType: json['memberType'] ?? 'C',
       createdDate: json['createdDate'] != null
           ? DateTime.parse(json['createdDate'])
           : null,

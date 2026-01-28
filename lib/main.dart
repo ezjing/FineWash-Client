@@ -116,7 +116,7 @@ class AuthWrapper extends StatelessWidget {
       builder: (context, authService, child) {
         if (authService.isAuthenticated) {
           // memberType에 따라 고객/사업자 화면 분기
-          final memberType = authService.currentUser?.memberType ?? 'U';
+          final memberType = authService.currentUser?.memberType ?? 'C';
           if (memberType == 'B') {
             return const BusinessHomeScreen();
           } else {

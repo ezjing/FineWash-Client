@@ -1,4 +1,3 @@
-
 import 'package:flutter/foundation.dart';
 import '../models/member_model.dart';
 import 'api_service.dart';
@@ -79,12 +78,14 @@ class AuthService extends ChangeNotifier {
         } catch (e) {
           // 개발 환경에서는 Mock 사용자 생성
           _currentUser = MemberModel(
-            memIdx: int.tryParse(result.id ?? '0') ?? DateTime.now().millisecondsSinceEpoch,
+            memIdx:
+                int.tryParse(result.id ?? '0') ??
+                DateTime.now().millisecondsSinceEpoch,
             name: result.name ?? '소셜 사용자',
             email: result.email ?? '',
             phone: '',
             socialType: provider.name,
-            memberType: 'U', // 기본값: 고객
+            memberType: 'C', // 기본값: 고객
           );
         }
 
@@ -137,7 +138,10 @@ class AuthService extends ChangeNotifier {
       notifyListeners();
       return true;
     } catch (e) {
-      final msg = e.toString().replaceAll(RegExp(r'Exception:\s*', caseSensitive: false), '').trim();
+      final msg = e
+          .toString()
+          .replaceAll(RegExp(r'Exception:\s*', caseSensitive: false), '')
+          .trim();
       _lastError = msg;
       _currentUser = MemberModel(
         memIdx: DateTime.now().millisecondsSinceEpoch,
@@ -146,7 +150,7 @@ class AuthService extends ChangeNotifier {
         phone: phone,
         address: address,
         gender: gender,
-        memberType: 'U', // 기본값: 고객
+        memberType: 'C', // 기본값: 고객
       );
       _isLoading = false;
       notifyListeners();

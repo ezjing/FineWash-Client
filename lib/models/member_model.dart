@@ -10,10 +10,11 @@ class MemberModel {
   final String? email;
   final String? socialType;
   final String? socialId;
+  final String? memberType; // U: 고객, B: 사업자
   final DateTime? createdDate;
   final DateTime? updateDate;
 
-  MemberModel({ 
+  MemberModel({
     required this.memIdx,
     this.busMstIdx,
     this.userId,
@@ -25,60 +26,50 @@ class MemberModel {
     this.email,
     this.socialType,
     this.socialId,
+    this.memberType,
     this.createdDate,
     this.updateDate,
   });
 
   factory MemberModel.fromJson(Map<String, dynamic> json) {
     return MemberModel(
-      memIdx: json['id'] ?? json['memIdx'] ?? json['mem_idx'] ?? 0,
-      busMstIdx: json['busMstIdx'] ?? json['bus_mst_idx'],
-      userId: json['userId'] ?? json['user_id'],
+      memIdx: json['memIdx'] ?? 0,
+      busMstIdx: json['busMstIdx'],
+      userId: json['userId'],
       name: json['name'],
-      fcmToken: json['fcmToken'] ?? json['fcm_token'],
+      fcmToken: json['fcmToken'],
       address: json['address'],
       phone: json['phone'],
       gender: json['gender'],
       email: json['email'],
-      socialType: json['socialType'] ?? json['social_type'],
-      socialId: json['socialId'] ?? json['social_id'],
+      socialType: json['socialType'],
+      socialId: json['socialId'],
+      memberType: json['memberType'] ?? 'U',
       createdDate: json['createdDate'] != null
           ? DateTime.parse(json['createdDate'])
-          : json['created_date'] != null
-          ? DateTime.parse(json['created_date'])
           : null,
       updateDate: json['updateDate'] != null
           ? DateTime.parse(json['updateDate'])
-          : json['update_date'] != null
-          ? DateTime.parse(json['update_date'])
           : null,
     );
   }
 
   Map<String, dynamic> toJson() {
     return {
-      'id': memIdx,
       'memIdx': memIdx,
-      'mem_idx': memIdx,
       'busMstIdx': busMstIdx,
-      'bus_mst_idx': busMstIdx,
       'userId': userId,
-      'user_id': userId,
       'name': name,
       'fcmToken': fcmToken,
-      'fcm_token': fcmToken,
       'address': address,
       'phone': phone,
       'gender': gender,
       'email': email,
       'socialType': socialType,
-      'social_type': socialType,
-      'socialId' : socialId,
-      'social_id' : socialId,    
+      'socialId': socialId,
+      'memberType': memberType,
       'createdDate': createdDate?.toIso8601String(),
-      'created_date': createdDate?.toIso8601String(),
       'updateDate': updateDate?.toIso8601String(),
-      'update_date': updateDate?.toIso8601String(),
     };
   }
 
@@ -94,6 +85,7 @@ class MemberModel {
     String? email,
     String? socialType,
     String? socialId,
+    String? memberType,
     DateTime? createdDate,
     DateTime? updateDate,
   }) {
@@ -109,6 +101,7 @@ class MemberModel {
       email: email ?? this.email,
       socialType: socialType ?? this.socialType,
       socialId: socialId ?? this.socialId,
+      memberType: memberType ?? this.memberType,
       createdDate: createdDate ?? this.createdDate,
       updateDate: updateDate ?? this.updateDate,
     );

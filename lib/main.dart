@@ -8,6 +8,7 @@ import 'services/vehicle_service.dart';
 import 'services/social_auth_service.dart';
 import 'screens/login_screen.dart';
 import 'screens/home_screen.dart';
+import 'screens/business_home_screen.dart';
 import 'utils/app_colors.dart';
 
 void main() async {
@@ -114,7 +115,13 @@ class AuthWrapper extends StatelessWidget {
     return Consumer<AuthService>(
       builder: (context, authService, child) {
         if (authService.isAuthenticated) {
-          return const HomeScreen();
+          // memberType에 따라 고객/사업자 화면 분기
+          final memberType = authService.currentUser?.memberType ?? 'U';
+          if (memberType == 'B') {
+            return const BusinessHomeScreen();
+          } else {
+            return const HomeScreen();
+          }
         }
         return const LoginScreen();
       },

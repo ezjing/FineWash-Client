@@ -37,70 +37,47 @@ class ReservationModel {
 
   factory ReservationModel.fromJson(Map<String, dynamic> json) {
     return ReservationModel(
-      resvIdx: json['id'] ?? json['resvIdx'] ?? json['resv_idx'] ?? 0,
-      busDtlIdx: json['busDtlIdx'] ?? json['bus_dtl_idx'],
-      memIdx: json['memIdx'] ?? json['mem_idx'],
-      vehIdx: json['vehicleId'] ?? json['vehIdx'] ?? json['veh_idx'],
-      mainOption: json['mainOption'] ?? json['main_option'],
-      midOption: json['midOption'] ?? json['mid_option'],
-      subOption: json['subOption'] ?? json['sub_option'],
-      vehicleLocation: json['vehicleLocation'] ?? json['vehicle_location'],
-      contractYn: json['contractYn'] ?? json['contract_yn'] ?? 'Y',
+      resvIdx: json['resvIdx'] ?? 0,
+      busDtlIdx: json['busDtlIdx'],
+      memIdx: json['memIdx'],
+      vehIdx: json['vehIdx'],
+      mainOption: json['mainOption'],
+      midOption: json['midOption'],
+      subOption: json['subOption'],
+      vehicleLocation: json['vehicleLocation'],
+      contractYn: json['contractYn'] ?? 'Y',
       date: json['date'],
       time: json['time'],
-      impUid: json['impUid'] ?? json['imp_uid'],
-      merchantUid: json['merchantUid'] ?? json['merchant_uid'],
-      paymentAmount: json['paymentAmount'] ?? json['payment_amount'],
-      createdDate: json['createdAt'] != null
-          ? DateTime.parse(json['createdAt'])
-          : json['created_date'] != null
-          ? DateTime.parse(json['created_date'])
-          : json['createdDate'] != null
+      impUid: json['impUid'],
+      merchantUid: json['merchantUid'],
+      paymentAmount: json['paymentAmount'],
+      createdDate: json['createdDate'] != null
           ? DateTime.parse(json['createdDate'])
           : null,
       updateDate: json['updateDate'] != null
           ? DateTime.parse(json['updateDate'])
-          : json['update_date'] != null
-          ? DateTime.parse(json['update_date'])
           : null,
     );
   }
 
   Map<String, dynamic> toJson() {
     return {
-      'id': resvIdx,
       'resvIdx': resvIdx,
-      'resv_idx': resvIdx,
       'busDtlIdx': busDtlIdx,
-      'bus_dtl_idx': busDtlIdx,
       'memIdx': memIdx,
-      'mem_idx': memIdx,
-      'vehicleId': vehIdx,
       'vehIdx': vehIdx,
-      'veh_idx': vehIdx,
       'mainOption': mainOption,
-      'main_option': mainOption,
       'midOption': midOption,
-      'mid_option': midOption,
       'subOption': subOption,
-      'sub_option': subOption,
       'vehicleLocation': vehicleLocation,
-      'vehicle_location': vehicleLocation,
       'contractYn': contractYn,
-      'contract_yn': contractYn,
       'date': date,
       'time': time,
       'impUid': impUid,
-      'imp_uid': impUid,
       'merchantUid': merchantUid,
-      'merchant_uid': merchantUid,
       'paymentAmount': paymentAmount,
-      'payment_amount': paymentAmount,
-      'createdAt': createdDate?.toIso8601String(),
-      'created_date': createdDate?.toIso8601String(),
       'createdDate': createdDate?.toIso8601String(),
       'updateDate': updateDate?.toIso8601String(),
-      'update_date': updateDate?.toIso8601String(),
     };
   }
 

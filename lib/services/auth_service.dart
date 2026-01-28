@@ -84,6 +84,7 @@ class AuthService extends ChangeNotifier {
             email: result.email ?? '',
             phone: '',
             socialType: provider.name,
+            memberType: 'U', // 기본값: 고객
           );
         }
 
@@ -145,6 +146,7 @@ class AuthService extends ChangeNotifier {
         phone: phone,
         address: address,
         gender: gender,
+        memberType: 'U', // 기본값: 고객
       );
       _isLoading = false;
       notifyListeners();

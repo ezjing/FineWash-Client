@@ -25,46 +25,35 @@ class VehicleModel {
 
   factory VehicleModel.fromJson(Map<String, dynamic> json) {
     return VehicleModel(
-      vehIdx: json['id'] ?? json['vehIdx'] ?? json['veh_idx'] ?? 0,
-      memIdx: json['memIdx'] ?? json['mem_idx'],
-      vehicleType: json['vehicleType'] ?? json['vehicle_type'],
+      vehIdx: json['vehIdx'] ?? 0,
+      memIdx: json['memIdx'],
+      vehicleType: json['vehicleType'],
       model: json['model'],
-      vehicleNumber: json['vehicleNumber'] ?? json['vehicle_number'],
+      vehicleNumber: json['vehicleNumber'],
       color: json['color'],
       year: json['year'],
       remark: json['remark'],
       createdDate: json['createdDate'] != null
           ? DateTime.parse(json['createdDate'])
-          : json['created_date'] != null
-              ? DateTime.parse(json['created_date'])
-              : null,
+          : null,
       updateDate: json['updateDate'] != null
           ? DateTime.parse(json['updateDate'])
-          : json['update_date'] != null
-              ? DateTime.parse(json['update_date'])
-              : null,
+          : null,
     );
   }
 
   Map<String, dynamic> toJson() {
     return {
-      'id': vehIdx,
       'vehIdx': vehIdx,
-      'veh_idx': vehIdx,
       'memIdx': memIdx,
-      'mem_idx': memIdx,
       'vehicleType': vehicleType,
-      'vehicle_type': vehicleType,
       'model': model,
       'vehicleNumber': vehicleNumber,
-      'vehicle_number': vehicleNumber,
       'color': color,
       'year': year,
       'remark': remark,
       'createdDate': createdDate?.toIso8601String(),
-      'created_date': createdDate?.toIso8601String(),
       'updateDate': updateDate?.toIso8601String(),
-      'update_date': updateDate?.toIso8601String(),
     };
   }
 
@@ -79,4 +68,3 @@ class VehicleModel {
     return '차량 정보 없음';
   }
 }
-

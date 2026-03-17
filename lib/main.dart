@@ -5,6 +5,7 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'services/auth_service.dart';
 import 'services/reservation_service.dart';
 import 'services/vehicle_service.dart';
+import 'services/business_service.dart';
 import 'services/social_auth_service.dart';
 import 'screens/login_screen.dart';
 import 'screens/home_screen.dart';
@@ -36,6 +37,7 @@ class FineWashApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => AuthService()),
         ChangeNotifierProvider(create: (_) => VehicleService()),
         ChangeNotifierProvider(create: (_) => ReservationService()),
+        ChangeNotifierProvider(create: (_) => BusinessService()),
       ],
       child: MaterialApp(
         title: '출장세차',

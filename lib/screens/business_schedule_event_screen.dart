@@ -19,6 +19,8 @@ class _BusinessScheduleEventScreenState
   String? _eventType; // 'vacation', 'overtime', null
   String? _startTime;
   String? _endTime;
+  // TODO: 메모 저장 API 연동 시 사용
+  // ignore: unused_field
   String? _note;
 
   @override
@@ -186,6 +188,7 @@ class _BusinessScheduleEventScreenState
               ),
               child: const Text('저장'),
             ),
+            SizedBox(height: MediaQuery.of(context).padding.bottom),
           ],
         ),
       ),

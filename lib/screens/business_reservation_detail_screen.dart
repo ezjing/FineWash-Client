@@ -1,17 +1,12 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 import '../models/reservation_model.dart';
-import '../services/reservation_service.dart';
 import '../services/api_service.dart';
 import '../utils/app_colors.dart';
 
 class BusinessReservationDetailScreen extends StatefulWidget {
   final ReservationModel reservation;
 
-  const BusinessReservationDetailScreen({
-    super.key,
-    required this.reservation,
-  });
+  const BusinessReservationDetailScreen({super.key, required this.reservation});
 
   @override
   State<BusinessReservationDetailScreen> createState() =>
@@ -34,9 +29,9 @@ class _BusinessReservationDetailScreenState
 
   Future<void> _approveReservation() async {
     if (_selectedDate.isEmpty || _selectedTime.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('예약 날짜와 시간을 선택해주세요')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('예약 날짜와 시간을 선택해주세요')));
       return;
     }
 
@@ -49,15 +44,16 @@ class _BusinessReservationDetailScreenState
         {
           'date': _selectedDate,
           'time': _selectedTime,
-          if (_estimatedDuration != null) 'estimatedDuration': _estimatedDuration,
+          if (_estimatedDuration != null)
+            'estimatedDuration': _estimatedDuration,
         },
       );
 
       if (response['success'] == true) {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('예약이 승인되었습니다')),
-          );
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(const SnackBar(content: Text('예약이 승인되었습니다')));
           Navigator.pop(context, true);
         }
       } else {
@@ -69,9 +65,9 @@ class _BusinessReservationDetailScreenState
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('오류가 발생했습니다: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('오류가 발생했습니다: $e')));
       }
     } finally {
       if (mounted) {
@@ -112,9 +108,9 @@ class _BusinessReservationDetailScreenState
 
       if (response['success'] == true) {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('예약이 거절되었습니다')),
-          );
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(const SnackBar(content: Text('예약이 거절되었습니다')));
           Navigator.pop(context, true);
         }
       } else {
@@ -126,9 +122,9 @@ class _BusinessReservationDetailScreenState
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('오류가 발생했습니다: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('오류가 발생했습니다: $e')));
       }
     } finally {
       if (mounted) {
@@ -188,12 +184,11 @@ class _BusinessReservationDetailScreenState
   @override
   Widget build(BuildContext context) {
     final reservation = widget.reservation;
-    final isPending = reservation.contractYn != 'Y' && reservation.contractYn != 'N';
+    final isPending =
+        reservation.contractYn != 'Y' && reservation.contractYn != 'N';
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('예약 상세'),
-      ),
+      appBar: AppBar(title: const Text('예약 상세')),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -224,29 +219,31 @@ class _BusinessReservationDetailScreenState
                         ),
                         Container(
                           padding: const EdgeInsets.symmetric(
-                              horizontal: 12, vertical: 6),
+                            horizontal: 12,
+                            vertical: 6,
+                          ),
                           decoration: BoxDecoration(
                             color: isPending
                                 ? AppColors.warning.withOpacity(0.1)
                                 : reservation.contractYn == 'Y'
-                                    ? AppColors.success.withOpacity(0.1)
-                                    : AppColors.error.withOpacity(0.1),
+                                ? AppColors.success.withOpacity(0.1)
+                                : AppColors.error.withOpacity(0.1),
                             borderRadius: BorderRadius.circular(12),
                           ),
                           child: Text(
                             isPending
                                 ? '대기중'
                                 : reservation.contractYn == 'Y'
-                                    ? '승인됨'
-                                    : '거절됨',
+                                ? '승인됨'
+                                : '거절됨',
                             style: TextStyle(
                               fontSize: 12,
                               fontWeight: FontWeight.w600,
                               color: isPending
                                   ? AppColors.warning
                                   : reservation.contractYn == 'Y'
-                                      ? AppColors.success
-                                      : AppColors.error,
+                                  ? AppColors.success
+                                  : AppColors.error,
                             ),
                           ),
                         ),
@@ -317,18 +314,14 @@ class _BusinessReservationDetailScreenState
                     children: [
                       _DateTimeSelector(
                         label: '예약 날짜',
-                        value: _selectedDate.isEmpty
-                            ? '날짜 선택'
-                            : _selectedDate,
+                        value: _selectedDate.isEmpty ? '날짜 선택' : _selectedDate,
                         icon: Icons.calendar_today,
                         onTap: _selectDate,
                       ),
                       const SizedBox(height: 16),
                       _DateTimeSelector(
                         label: '예약 시간',
-                        value: _selectedTime.isEmpty
-                            ? '시간 선택'
-                            : _selectedTime,
+                        value: _selectedTime.isEmpty ? '시간 선택' : _selectedTime,
                         icon: Icons.access_time,
                         onTap: _selectTime,
                       ),
@@ -388,8 +381,9 @@ class _BusinessReservationDetailScreenState
                               width: 20,
                               child: CircularProgressIndicator(
                                 strokeWidth: 2,
-                                valueColor:
-                                    AlwaysStoppedAnimation<Color>(Colors.white),
+                                valueColor: AlwaysStoppedAnimation<Color>(
+                                  Colors.white,
+                                ),
                               ),
                             )
                           : const Text('승인'),
@@ -398,6 +392,7 @@ class _BusinessReservationDetailScreenState
                 ],
               ),
             ],
+            SizedBox(height: MediaQuery.of(context).padding.bottom),
           ],
         ),
       ),

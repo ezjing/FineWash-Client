@@ -25,6 +25,7 @@ class _BusinessScheduleManagementScreenState
 
   @override
   Widget build(BuildContext context) {
+    final mediaQuery = MediaQuery.of(context);
     return Scaffold(
       appBar: AppBar(
         title: const Text('스케줄 관리'),
@@ -87,6 +88,7 @@ class _BusinessScheduleManagementScreenState
           Expanded(
             child: _buildCalendar(),
           ),
+          SizedBox(height: mediaQuery.padding.bottom),
         ],
       ),
     );

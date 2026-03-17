@@ -49,6 +49,7 @@ class _BusinessReservationManagementScreenState
 
   @override
   Widget build(BuildContext context) {
+    final mediaQuery = MediaQuery.of(context);
     return Scaffold(
       appBar: AppBar(
         title: const Text('예약 관리'),
@@ -129,7 +130,12 @@ class _BusinessReservationManagementScreenState
                 return RefreshIndicator(
                   onRefresh: _loadReservations,
                   child: ListView.builder(
-                    padding: const EdgeInsets.all(16),
+                    padding: EdgeInsets.fromLTRB(
+                      16,
+                      16,
+                      16,
+                      16 + mediaQuery.padding.bottom,
+                    ),
                     itemCount: reservations.length,
                     itemBuilder: (context, index) {
                       final reservation = reservations[index];
@@ -153,6 +159,7 @@ class _BusinessReservationManagementScreenState
               },
             ),
           ),
+          SizedBox(height: mediaQuery.padding.bottom),
         ],
       ),
     );

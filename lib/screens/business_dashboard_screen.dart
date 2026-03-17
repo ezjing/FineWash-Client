@@ -10,6 +10,8 @@ class BusinessDashboardScreen extends StatefulWidget {
 }
 
 class _BusinessDashboardScreenState extends State<BusinessDashboardScreen> {
+  // TODO: 기간 필터 UI/로직 연동 시 사용
+  // ignore: unused_field
   String _selectedPeriod = 'week'; // week, month, year
   int? _selectedLocationId; // null이면 전체
 
@@ -232,6 +234,7 @@ class _BusinessDashboardScreenState extends State<BusinessDashboardScreen> {
                 ),
               ),
             ),
+            SizedBox(height: MediaQuery.of(context).padding.bottom),
           ],
         ),
       ),

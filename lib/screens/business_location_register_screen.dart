@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import '../utils/app_colors.dart';
+import 'package:provider/provider.dart';
+import '../services/business_service.dart';
 
 class BusinessLocationRegisterScreen extends StatefulWidget {
   final int? locationId; // 수정 모드인 경우
@@ -18,31 +19,61 @@ class _BusinessLocationRegisterScreenState
     extends State<BusinessLocationRegisterScreen> {
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
+  final _businessNumberController = TextEditingController();
   final _addressController = TextEditingController();
   final _addressDetailController = TextEditingController();
   final _phoneController = TextEditingController();
+  final _emailController = TextEditingController();
+  final _depositAmountController = TextEditingController();
+  final _remarkController = TextEditingController();
+
+  bool _depositYn = false;
   bool _isLoading = false;
-  int _currentStep = 0; // 0: 기본정보, 1: 상세(room) 등록, 2: 옵션 등록
 
   @override
   void initState() {
     super.initState();
     if (widget.locationId != null) {
       // 수정 모드: 기존 데이터 로드
-      _loadLocationData();
+      WidgetsBinding.instance.addPostFrameCallback((_) => _loadLocationData());
     }
   }
 
   Future<void> _loadLocationData() async {
-    // TODO: API에서 기존 데이터 로드
+    if (widget.locationId == null) return;
+    setState(() => _isLoading = true);
+    try {
+      final businessService = context.read<BusinessService>();
+      final business = await businessService.getBusinessDetail(widget.locationId!);
+      if (!mounted || business == null) return;
+
+      _nameController.text = business.companyName ?? '';
+      _businessNumberController.text = business.businessNumber ?? '';
+      _phoneController.text = business.phone ?? '';
+      _addressController.text = business.address ?? '';
+      _addressDetailController.text = '';
+      _emailController.text = business.email ?? '';
+      _depositYn = (business.depositYn ?? 'N') == 'Y';
+      _depositAmountController.text =
+          (business.depositAmount != null && business.depositAmount! > 0)
+              ? business.depositAmount.toString()
+              : '';
+      _remarkController.text = business.remark ?? '';
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
   }
 
   @override
   void dispose() {
     _nameController.dispose();
+    _businessNumberController.dispose();
     _addressController.dispose();
     _addressDetailController.dispose();
     _phoneController.dispose();
+    _emailController.dispose();
+    _depositAmountController.dispose();
+    _remarkController.dispose();
     super.dispose();
   }
 
@@ -53,9 +84,37 @@ class _BusinessLocationRegisterScreenState
 
     setState(() => _isLoading = true);
 
+    final businessNumber = _businessNumberController.text.trim();
+    final companyName = _nameController.text.trim();
+    final address =
+        '${_addressController.text.trim()} ${_addressDetailController.text.trim()}'.trim();
+    final phone = _phoneController.text.trim();
+    final email = _emailController.text.trim().isEmpty
+        ? null
+        : _emailController.text.trim();
+    final depositYn = _depositYn ? 'Y' : 'N';
+    final depositAmount = _depositYn
+        ? int.tryParse(_depositAmountController.text.trim()) ?? 0
+        : 0;
+    final remark =
+        _remarkController.text.trim().isEmpty ? null : _remarkController.text.trim();
+
     try {
-      // TODO: API 호출하여 저장
-      await Future.delayed(const Duration(seconds: 1));
+      final businessService = context.read<BusinessService>();
+      final saved = await businessService.saveBusinessMaster(
+        busMstIdx: widget.locationId,
+        businessNumber: businessNumber,
+        companyName: companyName,
+        address: address,
+        phone: phone,
+        email: email,
+        depositYn: depositYn,
+        depositAmount: depositAmount,
+        remark: remark,
+      );
+      if (saved == null) {
+        throw Exception('저장에 실패했습니다.');
+      }
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -82,51 +141,50 @@ class _BusinessLocationRegisterScreenState
 
   @override
   Widget build(BuildContext context) {
+    final mediaQuery = MediaQuery.of(context);
     return Scaffold(
       appBar: AppBar(
         title: Text(widget.locationId != null ? '사업장 수정' : '사업장 등록'),
       ),
-      body: Stepper(
-        currentStep: _currentStep,
-        onStepContinue: () {
-          if (_currentStep < 2) {
-            setState(() => _currentStep++);
-          } else {
-            _saveLocation();
-          }
-        },
-        onStepCancel: () {
-          if (_currentStep > 0) {
-            setState(() => _currentStep--);
-          } else {
-            Navigator.pop(context);
-          }
-        },
-        steps: [
-          Step(
-            title: const Text('기본 정보'),
-            content: _buildBasicInfoStep(),
-            isActive: _currentStep >= 0,
+      body: Stack(
+        children: [
+          SingleChildScrollView(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              children: [
+                _buildBasicInfoForm(),
+                const SizedBox(height: 20),
+                FilledButton(
+                  onPressed: _isLoading ? null : _saveLocation,
+                  style: FilledButton.styleFrom(
+                    minimumSize: const Size(double.infinity, 48),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  child: Text(widget.locationId != null ? '수정 저장' : '등록 저장'),
+                ),
+                SizedBox(height: mediaQuery.padding.bottom),
+              ],
+            ),
           ),
-          Step(
-            title: const Text('상세(room) 등록'),
-            content: _buildRoomStep(),
-            isActive: _currentStep >= 1,
-          ),
-          Step(
-            title: const Text('옵션 등록'),
-            content: _buildOptionStep(),
-            isActive: _currentStep >= 2,
-          ),
+          if (_isLoading)
+            Container(
+              color: Colors.black26,
+              child: const Center(
+                child: CircularProgressIndicator(),
+              ),
+            ),
         ],
       ),
     );
   }
 
-  Widget _buildBasicInfoStep() {
+  Widget _buildBasicInfoForm() {
     return Form(
       key: _formKey,
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           TextFormField(
             controller: _nameController,
@@ -138,6 +196,26 @@ class _BusinessLocationRegisterScreenState
             validator: (value) {
               if (value == null || value.isEmpty) {
                 return '사업장명을 입력해주세요';
+              }
+              return null;
+            },
+          ),
+          const SizedBox(height: 16),
+          TextFormField(
+            controller: _businessNumberController,
+            decoration: const InputDecoration(
+              labelText: '사업자 번호',
+              hintText: '000-00-00000',
+              prefixIcon: Icon(Icons.badge),
+            ),
+            keyboardType: TextInputType.number,
+            validator: (value) {
+              if (value == null || value.isEmpty) {
+                return '사업자 번호를 입력해주세요';
+              }
+              final digitsOnly = value.replaceAll(RegExp(r'[^0-9]'), '');
+              if (digitsOnly.length != 10) {
+                return '사업자 번호 10자리를 입력해주세요';
               }
               return null;
             },
@@ -175,6 +253,7 @@ class _BusinessLocationRegisterScreenState
               prefixIcon: Icon(Icons.phone),
             ),
             keyboardType: TextInputType.phone,
+            textInputAction: TextInputAction.next,
             validator: (value) {
               if (value == null || value.isEmpty) {
                 return '전화번호를 입력해주세요';
@@ -182,98 +261,73 @@ class _BusinessLocationRegisterScreenState
               return null;
             },
           ),
+          const SizedBox(height: 16),
+          TextFormField(
+            controller: _emailController,
+            decoration: const InputDecoration(
+              labelText: '이메일',
+              hintText: 'example@domain.com',
+              prefixIcon: Icon(Icons.email),
+            ),
+            keyboardType: TextInputType.emailAddress,
+            textInputAction: TextInputAction.next,
+            validator: (value) {
+              if (value == null || value.trim().isEmpty) return null;
+              final v = value.trim();
+              final ok = RegExp(r'^[^\s@]+@[^\s@]+\.[^\s@]+$').hasMatch(v);
+              if (!ok) return '이메일 형식이 올바르지 않습니다';
+              return null;
+            },
+          ),
+          const SizedBox(height: 16),
+          SwitchListTile(
+            contentPadding: EdgeInsets.zero,
+            title: const Text('예약금 사용'),
+            subtitle: const Text('예약금 Y/N'),
+            value: _depositYn,
+            onChanged: _isLoading
+                ? null
+                : (value) {
+                    setState(() {
+                      _depositYn = value;
+                      if (!value) _depositAmountController.text = '';
+                    });
+                  },
+          ),
+          const SizedBox(height: 8),
+          TextFormField(
+            controller: _depositAmountController,
+            decoration: const InputDecoration(
+              labelText: '예약금',
+              hintText: '0',
+              prefixIcon: Icon(Icons.payments),
+            ),
+            enabled: _depositYn && !_isLoading,
+            keyboardType: TextInputType.number,
+            textInputAction: TextInputAction.next,
+            validator: (value) {
+              if (!_depositYn) return null;
+              final v = value?.trim() ?? '';
+              if (v.isEmpty) return '예약금을 입력해주세요';
+              final amount = int.tryParse(v);
+              if (amount == null || amount < 0) return '예약금은 0 이상의 숫자여야 합니다';
+              return null;
+            },
+          ),
+          const SizedBox(height: 16),
+          TextFormField(
+            controller: _remarkController,
+            decoration: const InputDecoration(
+              labelText: '비고',
+              hintText: '비고를 입력하세요',
+              prefixIcon: Icon(Icons.notes),
+            ),
+            maxLines: 3,
+            textInputAction: TextInputAction.done,
+            onFieldSubmitted: (_) => _saveLocation(),
+          ),
         ],
       ),
-    );
-  }
-
-  Widget _buildRoomStep() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          '사업장 상세(room) 정보를 등록하세요',
-          style: TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w500,
-            color: AppColors.textPrimary,
-          ),
-        ),
-        const SizedBox(height: 16),
-        // TODO: room 목록 추가/수정 UI 구현
-        Card(
-          elevation: 0,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-            side: const BorderSide(color: AppColors.border),
-          ),
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              children: [
-                TextField(
-                  decoration: const InputDecoration(
-                    labelText: 'Room 이름',
-                    hintText: '예: 세차실 1호',
-                  ),
-                ),
-                const SizedBox(height: 12),
-                TextField(
-                  decoration: const InputDecoration(
-                    labelText: '설명',
-                    hintText: 'Room에 대한 설명',
-                  ),
-                  maxLines: 3,
-                ),
-              ],
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildOptionStep() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          '서비스 옵션을 설정하세요 (최초 등록 시 기본값 설정 가능)',
-          style: TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w500,
-            color: AppColors.textPrimary,
-          ),
-        ),
-        const SizedBox(height: 16),
-        // TODO: 옵션 설정 UI 구현
-        Card(
-          elevation: 0,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-            side: const BorderSide(color: AppColors.border),
-          ),
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              children: [
-                SwitchListTile(
-                  title: const Text('기본 옵션 1'),
-                  subtitle: const Text('이 옵션을 기본값으로 설정'),
-                  value: true,
-                  onChanged: (value) {},
-                ),
-                SwitchListTile(
-                  title: const Text('기본 옵션 2'),
-                  subtitle: const Text('이 옵션을 기본값으로 설정'),
-                  value: false,
-                  onChanged: (value) {},
-                ),
-              ],
-            ),
-          ),
-        ),
-      ],
     );
   }
 }

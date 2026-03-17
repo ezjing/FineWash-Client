@@ -121,6 +121,7 @@ class _AddressSearchScreenState extends State<AddressSearchScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final mediaQuery = MediaQuery.of(context);
     return Scaffold(
       appBar: AppBar(
         title: const Text('주소 검색'),
@@ -136,6 +137,14 @@ class _AddressSearchScreenState extends State<AddressSearchScreen> {
             const Center(
               child: CircularProgressIndicator(color: AppColors.primary),
             ),
+          Positioned(
+            left: 0,
+            right: 0,
+            bottom: 0,
+            child: IgnorePointer(
+              child: SizedBox(height: mediaQuery.padding.bottom),
+            ),
+          ),
         ],
       ),
     );

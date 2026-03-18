@@ -1,9 +1,12 @@
 import 'package:flutter/foundation.dart';
 import '../models/member_model.dart';
-import 'api_service.dart';
 import 'social_auth_service.dart';
+import '../repositories/api_client.dart';
+import '../repositories/auth_repository.dart';
 
 class AuthService extends ChangeNotifier {
+  final AuthRepository _authRepository = AuthRepository();
+
   MemberModel? _currentUser;
   bool _isLoading = false;
   SocialProvider? _socialProvider;
@@ -20,12 +23,12 @@ class AuthService extends ChangeNotifier {
     notifyListeners();
 
     try {
-      final response = await ApiService.post('/auth/login', {
-        'email': email,
-        'password': password,
-      });
+      final response = await _authRepository.saveLogic2(
+        email: email,
+        password: password,
+      );
       if (response['token'] != null) {
-        await ApiService.setToken(response['token']);
+        await ApiClient.setToken(response['token']);
       }
       _currentUser = MemberModel.fromJson(response['user']);
       _isLoading = false;
@@ -63,16 +66,16 @@ class AuthService extends ChangeNotifier {
 
         // 서버에 소셜 로그인 정보 전송
         try {
-          final response = await ApiService.post('/auth/social-login', {
-            'provider': provider.name,
-            'socialId': result.id,
-            'email': result.email,
-            'name': result.name,
-            'profileImage': result.profileImage,
-          });
+          final response = await _authRepository.socialLogin(
+            provider: provider.name,
+            socialId: result.id,
+            email: result.email,
+            name: result.name,
+            profileImage: result.profileImage,
+          );
 
           if (response['token'] != null) {
-            await ApiService.setToken(response['token']);
+            await ApiClient.setToken(response['token']);
           }
           _currentUser = MemberModel.fromJson(response['user']);
         } catch (e) {
@@ -128,9 +131,9 @@ class AuthService extends ChangeNotifier {
         if (address != null) 'address': address,
         if (addressDetail != null) 'address_detail': addressDetail,
       };
-      final response = await ApiService.post('/auth/signup', body);
+      final response = await _authRepository.saveLogic1(body);
       if (response['token'] != null) {
-        await ApiService.setToken(response['token']);
+        await ApiClient.setToken(response['token']);
       }
       _currentUser = MemberModel.fromJson(response['user']);
       _lastError = null;
@@ -164,7 +167,7 @@ class AuthService extends ChangeNotifier {
       await SocialAuthService.logoutAll();
       _socialProvider = null;
     }
-    await ApiService.removeToken();
+    await ApiClient.removeToken();
     _currentUser = null;
     notifyListeners();
   }

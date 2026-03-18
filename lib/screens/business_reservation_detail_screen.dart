@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../models/reservation_model.dart';
-import '../services/api_service.dart';
+import '../services/reservation_service.dart';
 import '../utils/app_colors.dart';
 
 class BusinessReservationDetailScreen extends StatefulWidget {
@@ -38,18 +39,14 @@ class _BusinessReservationDetailScreenState
     setState(() => _isLoading = true);
 
     try {
-      // 예약 승인 및 일정 업데이트 API 호출
-      final response = await ApiService.put(
-        '/reservations/${widget.reservation.resvIdx}/approve',
-        {
-          'date': _selectedDate,
-          'time': _selectedTime,
-          if (_estimatedDuration != null)
-            'estimatedDuration': _estimatedDuration,
-        },
-      );
+      final ok = await context.read<ReservationService>().approveReservation(
+            resvIdx: widget.reservation.resvIdx,
+            date: _selectedDate,
+            time: _selectedTime,
+            estimatedDuration: _estimatedDuration,
+          );
 
-      if (response['success'] == true) {
+      if (ok) {
         if (mounted) {
           ScaffoldMessenger.of(
             context,
@@ -59,7 +56,7 @@ class _BusinessReservationDetailScreenState
       } else {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(response['message'] ?? '예약 승인에 실패했습니다')),
+            const SnackBar(content: Text('예약 승인에 실패했습니다')),
           );
         }
       }
@@ -101,12 +98,11 @@ class _BusinessReservationDetailScreenState
     setState(() => _isLoading = true);
 
     try {
-      final response = await ApiService.put(
-        '/reservations/${widget.reservation.resvIdx}/reject',
-        {},
-      );
+      final ok = await context
+          .read<ReservationService>()
+          .rejectReservation(widget.reservation.resvIdx);
 
-      if (response['success'] == true) {
+      if (ok) {
         if (mounted) {
           ScaffoldMessenger.of(
             context,
@@ -116,7 +112,7 @@ class _BusinessReservationDetailScreenState
       } else {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(response['message'] ?? '예약 거절에 실패했습니다')),
+            const SnackBar(content: Text('예약 거절에 실패했습니다')),
           );
         }
       }

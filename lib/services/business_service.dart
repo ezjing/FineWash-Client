@@ -2,9 +2,11 @@ import 'package:flutter/foundation.dart';
 import '../models/business_master_model.dart';
 import '../models/business_detail_model.dart';
 import '../models/reservation_model.dart';
-import 'api_service.dart';
+import '../repositories/business_repository.dart';
 
 class BusinessService extends ChangeNotifier {
+  final BusinessRepository _businessRepository = BusinessRepository();
+
   List<BusinessMasterModel> _businesses = [];
   BusinessMasterModel? _currentBusiness;
   BusinessDetailModel? _currentRoom;
@@ -24,7 +26,7 @@ class BusinessService extends ChangeNotifier {
     _isLoading = true;
     notifyListeners();
     try {
-      final response = await ApiService.get('/businesses');
+      final response = await _businessRepository.searchLogic2();
       if (response['success'] == true && response['businesses'] != null) {
         _businesses = (response['businesses'] as List)
             .map((json) => BusinessMasterModel.fromJson(json))
@@ -48,7 +50,8 @@ class BusinessService extends ChangeNotifier {
     _isLoading = true;
     notifyListeners();
     try {
-      final response = await ApiService.get('/businesses/$busMstIdx');
+      final response =
+          await _businessRepository.searchLogic3(busMstIdx);
       if (response['success'] == true && response['business'] != null) {
         _currentBusiness = BusinessMasterModel.fromJson(response['business']);
         _isLoading = false;
@@ -94,8 +97,8 @@ class BusinessService extends ChangeNotifier {
       };
 
       final response = busMstIdx == null
-          ? await ApiService.post('/businesses', body)
-          : await ApiService.put('/businesses/$busMstIdx', body);
+          ? await _businessRepository.saveLogic1(body)
+          : await _businessRepository.saveLogic2(busMstIdx, body);
 
       if (response['success'] == true && response['business'] != null) {
         final saved = BusinessMasterModel.fromJson(
@@ -132,7 +135,8 @@ class BusinessService extends ChangeNotifier {
     _isLoading = true;
     notifyListeners();
     try {
-      final response = await ApiService.get('/businesses/rooms/$busDtlIdx');
+      final response =
+          await _businessRepository.searchLogic1(busDtlIdx);
       if (response['success'] == true && response['room'] != null) {
         _currentRoom = BusinessDetailModel.fromJson(
           response['room'] as Map<String, dynamic>,
@@ -182,7 +186,7 @@ class BusinessService extends ChangeNotifier {
         body['startDate'] = startDate;
       if (endDate != null && endDate.isNotEmpty) body['endDate'] = endDate;
 
-      final response = await ApiService.post('/businesses/rooms', body);
+      final response = await _businessRepository.saveLogic3(body);
       if (response['success'] == true) {
         _isLoading = false;
         notifyListeners();
@@ -215,10 +219,8 @@ class BusinessService extends ChangeNotifier {
       if (startDate != null) body['startDate'] = startDate;
       if (endDate != null) body['endDate'] = endDate;
 
-      final response = await ApiService.put(
-        '/businesses/rooms/$busDtlIdx',
-        body,
-      );
+      final response =
+          await _businessRepository.saveLogic4(busDtlIdx, body);
       if (response['success'] == true && response['room'] != null) {
         final updated = BusinessDetailModel.fromJson(
           response['room'] as Map<String, dynamic>,
@@ -239,13 +241,11 @@ class BusinessService extends ChangeNotifier {
   }
 
   /// 룸(DTL) 삭제
-  Future<bool> deleteRoom({
-    required int busDtlIdx,
-  }) async {
+  Future<bool> deleteRoom({required int busDtlIdx}) async {
     _isLoading = true;
     notifyListeners();
     try {
-      final response = await ApiService.delete('/businesses/rooms/$busDtlIdx');
+      final response = await _businessRepository.saveLogic5(busDtlIdx);
       if (response['success'] == true) {
         if (_currentRoom?.busDtlIdx == busDtlIdx) {
           _currentRoom = null;

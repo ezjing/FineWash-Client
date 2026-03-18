@@ -1,8 +1,10 @@
 import 'package:flutter/foundation.dart';
 import '../models/reservation_model.dart';
-import 'api_service.dart';
+import '../repositories/reservation_repository.dart';
 
 class ReservationService extends ChangeNotifier {
+  final ReservationRepository _reservationRepository = ReservationRepository();
+
   List<ReservationModel> _reservations = [];
   ReservationModel? _currentReservation;
   bool _isLoading = false;
@@ -16,7 +18,7 @@ class ReservationService extends ChangeNotifier {
     _isLoading = true;
     notifyListeners();
     try {
-      final response = await ApiService.get('/reservations');
+      final response = await _reservationRepository.searchLogic1();
       if (response['success'] == true && response['reservations'] != null) {
         _reservations = (response['reservations'] as List)
             .map((json) => ReservationModel.fromJson(json))
@@ -72,7 +74,8 @@ class ReservationService extends ChangeNotifier {
         requestData['payment_amount'] = paymentAmount;
       }
 
-      final response = await ApiService.post('/reservations', requestData);
+      final response =
+          await _reservationRepository.saveLogic1(requestData);
       if (response['success'] == true && response['reservation'] != null) {
         final newReservation = ReservationModel.fromJson(
           response['reservation'],
@@ -130,7 +133,8 @@ class ReservationService extends ChangeNotifier {
         requestData['payment_amount'] = paymentAmount;
       }
 
-      final response = await ApiService.post('/reservations', requestData);
+      final response =
+          await _reservationRepository.saveLogic1(requestData);
       if (response['success'] == true && response['reservation'] != null) {
         final newReservation = ReservationModel.fromJson(
           response['reservation'],
@@ -156,10 +160,7 @@ class ReservationService extends ChangeNotifier {
     _isLoading = true;
     notifyListeners();
     try {
-      final response = await ApiService.put(
-        '/reservations/$resvIdx/cancel',
-        {},
-      );
+      final response = await _reservationRepository.saveLogic2(resvIdx);
       if (response['success'] == true) {
         final index = _reservations.indexWhere((r) => r.resvIdx == resvIdx);
         if (index != -1) {
@@ -174,6 +175,48 @@ class ReservationService extends ChangeNotifier {
       _isLoading = false;
       notifyListeners();
       return false;
+    } catch (e) {
+      _isLoading = false;
+      notifyListeners();
+      return false;
+    }
+  }
+
+  // 예약 승인
+  Future<bool> approveReservation({
+    required int resvIdx,
+    required String date,
+    required String time,
+    String? estimatedDuration,
+  }) async {
+    _isLoading = true;
+    notifyListeners();
+    try {
+      final response = await _reservationRepository.approveReservation(
+        resvIdx,
+        date: date,
+        time: time,
+        estimatedDuration: estimatedDuration,
+      );
+      _isLoading = false;
+      notifyListeners();
+      return response['success'] == true;
+    } catch (e) {
+      _isLoading = false;
+      notifyListeners();
+      return false;
+    }
+  }
+
+  // 예약 거절
+  Future<bool> rejectReservation(int resvIdx) async {
+    _isLoading = true;
+    notifyListeners();
+    try {
+      final response = await _reservationRepository.rejectReservation(resvIdx);
+      _isLoading = false;
+      notifyListeners();
+      return response['success'] == true;
     } catch (e) {
       _isLoading = false;
       notifyListeners();

@@ -9,44 +9,27 @@ Flutter 기반의 출장세차 모바일 앱입니다.
 ```
 lib/
 ├── main.dart              # 앱 시작점
+├── repositories/          # 서버 HTTP 데이터 접근(Repository)
 ├── models/                # 데이터 모델
-│   ├── booking_model.dart
-│   ├── product_model.dart
-│   ├── reservation_model.dart
-│   ├── service_type_model.dart
-│   ├── user_model.dart
-│   └── vehicle_model.dart
 ├── screens/               # 화면 UI
-│   ├── booking_confirmation_screen.dart
-│   ├── home_screen.dart
-│   ├── login_screen.dart
-│   ├── mobile_wash_booking_screen.dart
-│   ├── my_page_screen.dart
-│   ├── partner_wash_booking_screen.dart
-│   ├── shop_screen.dart
-│   ├── signup_screen.dart
-│   └── vehicle_registration_screen.dart
-├── services/              # API 통신 서비스
-│   ├── api_service.dart
-│   ├── auth_service.dart
-│   ├── booking_service.dart
-│   └── vehicle_service.dart
+├── services/              # 상태/비즈니스 로직(Provider)
+├── widgets/               # 재사용 가능한 위젯
 ├── utils/                 # 유틸리티
 │   └── app_colors.dart
-└── widgets/               # 재사용 위젯
 ```
 
 ---
 
 ## 📂 폴더별 역할
 
-| 폴더            | 역할               | 비유           |
-| --------------- | ------------------ | -------------- |
-| `lib/screens/`  | 화면 UI            | 건물의 방들 🏠 |
-| `lib/services/` | 서버와 통신        | 배달부 📦      |
-| `lib/models/`   | 데이터 형태 정의   | 주문서 양식 📋 |
-| `lib/utils/`    | 유틸리티 (색상 등) | 도구함 🧰      |
-| `lib/widgets/`  | 재사용 가능한 위젯 | 레고 블록 🧱   |
+| 폴더                | 역할                              | 비유                               |
+| ------------------- | --------------------------------- | ---------------------------------- |
+| `lib/screens/`      | 화면 UI                           | 건물의 방들 🏠                     |
+| `lib/services/`     | 상태/비즈니스 로직(Provider)      | 배달부 📦(필요 시 Repository 호출) |
+| `lib/repositories/` | 서버 HTTP 데이터 접근(Repository) | 창고/물류 센터 🏭                  |
+| `lib/models/`       | 데이터 형태 정의                  | 주문서 양식 📋                     |
+| `lib/widgets/`      | 재사용 가능한 위젯                | 레고 블록 🧱                       |
+| `lib/utils/`        | 유틸리티(색상 등)                 | 도구함 🧰                          |
 
 ---
 
@@ -104,18 +87,23 @@ flutter run -d chrome
 
 ## 🔌 API 서버 URL 설정
 
-`lib/services/api_service.dart` 파일에서 환경에 맞게 수정:
+루트 프로젝트의 `.env` 파일에서 `API_BASE_URL`을 설정합니다.
 
-```dart
-// iOS 시뮬레이터
-static const String baseUrl = 'http://localhost:3000/api';
+예:
 
-// Android 에뮬레이터 (⚠️ localhost 대신 10.0.2.2 사용!)
-static const String baseUrl = 'http://10.0.2.2:3000/api';
-
-// 실제 기기 테스트 (컴퓨터 IP 주소)
-static const String baseUrl = 'http://192.168.x.x:3000/api';
+```bash
+API_BASE_URL=http://localhost:3000/api
 ```
+
+`lib/repositories/api_client.dart`에서 `API_BASE_URL`을 읽어 HTTP 요청을 수행합니다.
+
+---
+
+## 함수 네이밍 통일
+
+서버 `FineWash-Server/src/routes/*`에서 사용되는 컨트롤러 메서드(`SaveLogicN`, `SearchLogicN`)와
+클라이언트 `lib/repositories/*`의 메서드명에 같은 `N` 규칙을 맞추었습니다.
+예: `BusinessRepository.searchLogic2()` ↔ `BusinessController.SearchLogic2`
 
 ---
 
@@ -133,7 +121,7 @@ static const String baseUrl = 'http://192.168.x.x:3000/api';
 | 문제                         | 해결 방법                               |
 | ---------------------------- | --------------------------------------- |
 | 서버가 안 켜져 있음          | 서버 프로젝트에서 `npm run dev` 실행    |
-| 포트가 다름                  | baseUrl과 서버 PORT 확인                |
+| 포트가 다름                  | `.env`의 `API_BASE_URL` 확인            |
 | Android 에뮬레이터 연결 안됨 | `localhost` → `10.0.2.2`로 변경         |
 | CORS 오류                    | 서버에 `app.use(cors())` 확인           |
 | 네트워크 오류                | 같은 Wi-Fi 연결 확인 (실기기 테스트 시) |

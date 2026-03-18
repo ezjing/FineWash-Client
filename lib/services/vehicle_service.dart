@@ -1,8 +1,10 @@
 import 'package:flutter/foundation.dart';
 import '../models/vehicle_model.dart';
-import 'api_service.dart';
+import '../repositories/vehicle_repository.dart';
 
 class VehicleService extends ChangeNotifier {
+  final VehicleRepository _vehicleRepository = VehicleRepository();
+
   List<VehicleModel> _vehicles = [];
   bool _isLoading = false;
 
@@ -15,7 +17,7 @@ class VehicleService extends ChangeNotifier {
     _isLoading = true;
     notifyListeners();
     try {
-      final response = await ApiService.get('/vehicles');
+      final response = await _vehicleRepository.searchLogic1();
       if (response['success'] == true && response['vehicles'] != null) {
         _vehicles = (response['vehicles'] as List)
             .map((v) => VehicleModel.fromJson(v))
@@ -48,7 +50,7 @@ class VehicleService extends ChangeNotifier {
     _isLoading = true;
     notifyListeners();
     try {
-      final response = await ApiService.post('/vehicles', {
+      final response = await _vehicleRepository.saveLogic1({
         'vehicle_type': vehicleType,
         'model': model,
         'vehicle_number': vehicleNumber,

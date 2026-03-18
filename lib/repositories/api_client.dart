@@ -1,14 +1,13 @@
 import 'dart:convert';
+
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
 
-class ApiService {
-  // 서버 URL (환경변수에서 로드)
-  // .env 파일에 API_BASE_URL 설정
-  // iOS 시뮬레이터: http://localhost:3000/api
-  // Android 에뮬레이터: http://10.0.2.2:3000/api
-  // 실제 기기: http://192.168.x.x:3000/api (컴퓨터 IP 주소)
+/// 데이터 접근 계층용 HTTP 클라이언트
+/// - token 포함 헤더 처리
+/// - 응답 statusCode 에러 throw
+class ApiClient {
   static String get baseUrl {
     return dotenv.get('API_BASE_URL', fallback: 'http://localhost:3000/api');
   }
@@ -97,11 +96,11 @@ class ApiService {
   }
 
   static Map<String, dynamic> _handleResponse(http.Response response) {
-    final data = jsonDecode(response.body);
+    final data = jsonDecode(response.body) as Map<String, dynamic>;
     if (response.statusCode >= 200 && response.statusCode < 300) {
       return data;
-    } else {
-      throw Exception(data['message'] ?? '서버 오류가 발생했습니다.');
     }
+    throw Exception(data['message'] ?? '서버 오류가 발생했습니다.');
   }
 }
+

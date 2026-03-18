@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../models/service_type_model.dart';
+import '../models/address_result.dart';
 import '../services/vehicle_service.dart';
 import '../services/reservation_service.dart';
-import '../services/address_service.dart';
 import '../services/payment_service.dart';
 import '../services/auth_service.dart';
 import '../utils/app_colors.dart';
@@ -44,7 +44,10 @@ class _MobileWashReservationScreenState
     super.initState();
     // 화면 진입 시 차량 목록 조회
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      final vehicleService = Provider.of<VehicleService>(context, listen: false);
+      final vehicleService = Provider.of<VehicleService>(
+        context,
+        listen: false,
+      );
       vehicleService.searchLogic1();
     });
   }
@@ -276,7 +279,10 @@ class _MobileWashReservationScreenState
                   );
                   if (result == true) {
                     // 차량 등록 후 목록 새로고침
-                    final vehicleService = Provider.of<VehicleService>(context, listen: false);
+                    final vehicleService = Provider.of<VehicleService>(
+                      context,
+                      listen: false,
+                    );
                     await vehicleService.searchLogic1();
                     setState(() {});
                   }
@@ -354,12 +360,16 @@ class _MobileWashReservationScreenState
                         );
                         if (result == true) {
                           // 차량 등록 후 목록 새로고침
-                          final vehicleService = Provider.of<VehicleService>(context, listen: false);
+                          final vehicleService = Provider.of<VehicleService>(
+                            context,
+                            listen: false,
+                          );
                           await vehicleService.searchLogic1();
                           // 새로 등록한 차량을 자동으로 선택
                           if (vehicleService.vehicles.isNotEmpty) {
                             setState(() {
-                              _selectedVehicleId = vehicleService.vehicles.last.vehIdx;
+                              _selectedVehicleId =
+                                  vehicleService.vehicles.last.vehIdx;
                             });
                           }
                         }

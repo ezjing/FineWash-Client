@@ -3,9 +3,11 @@ import 'package:portone_flutter/iamport_payment.dart';
 import 'package:portone_flutter/model/payment_data.dart';
 import 'package:uuid/uuid.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
-import 'api_service.dart';
+import '../repositories/payment_repository.dart';
 
 class PaymentService {
+  static final PaymentRepository _paymentRepository = PaymentRepository();
+
   // 포트원 가맹점 식별코드 (환경변수에서 로드)
   static String get _impCode {
     return dotenv.get('PORTONE_IMP_CODE', fallback: 'imp20751052');
@@ -121,11 +123,11 @@ class PaymentService {
     required int amount,
   }) async {
     try {
-      final response = await ApiService.post('/payments/verify', {
-        'imp_uid': impUid,
-        'merchant_uid': merchantUid,
-        'amount': amount,
-      });
+      final response = await _paymentRepository.saveLogic1(
+        impUid: impUid,
+        merchantUid: merchantUid,
+        amount: amount,
+      );
       return response['success'] == true && response['verified'] == true;
     } catch (e) {
       // 백엔드 검증 실패 시 false 반환

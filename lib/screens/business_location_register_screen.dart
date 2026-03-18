@@ -5,10 +5,7 @@ import '../services/business_service.dart';
 class BusinessLocationRegisterScreen extends StatefulWidget {
   final int? locationId; // 수정 모드인 경우
 
-  const BusinessLocationRegisterScreen({
-    super.key,
-    this.locationId,
-  });
+  const BusinessLocationRegisterScreen({super.key, this.locationId});
 
   @override
   State<BusinessLocationRegisterScreen> createState() =>
@@ -28,6 +25,7 @@ class _BusinessLocationRegisterScreenState
   final _remarkController = TextEditingController();
 
   bool _depositYn = false;
+  String? _businessType;
   bool _isLoading = false;
 
   @override
@@ -44,7 +42,9 @@ class _BusinessLocationRegisterScreenState
     setState(() => _isLoading = true);
     try {
       final businessService = context.read<BusinessService>();
-      final business = await businessService.getBusinessDetail(widget.locationId!);
+      final business = await businessService.getBusinessDetail(
+        widget.locationId!,
+      );
       if (!mounted || business == null) return;
 
       _nameController.text = business.companyName ?? '';
@@ -56,9 +56,10 @@ class _BusinessLocationRegisterScreenState
       _depositYn = (business.depositYn ?? 'N') == 'Y';
       _depositAmountController.text =
           (business.depositAmount != null && business.depositAmount! > 0)
-              ? business.depositAmount.toString()
-              : '';
+          ? business.depositAmount.toString()
+          : '';
       _remarkController.text = business.remark ?? '';
+      _businessType = business.businessType;
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -87,7 +88,8 @@ class _BusinessLocationRegisterScreenState
     final businessNumber = _businessNumberController.text.trim();
     final companyName = _nameController.text.trim();
     final address =
-        '${_addressController.text.trim()} ${_addressDetailController.text.trim()}'.trim();
+        '${_addressController.text.trim()} ${_addressDetailController.text.trim()}'
+            .trim();
     final phone = _phoneController.text.trim();
     final email = _emailController.text.trim().isEmpty
         ? null
@@ -96,8 +98,9 @@ class _BusinessLocationRegisterScreenState
     final depositAmount = _depositYn
         ? int.tryParse(_depositAmountController.text.trim()) ?? 0
         : 0;
-    final remark =
-        _remarkController.text.trim().isEmpty ? null : _remarkController.text.trim();
+    final remark = _remarkController.text.trim().isEmpty
+        ? null
+        : _remarkController.text.trim();
 
     try {
       final businessService = context.read<BusinessService>();
@@ -108,6 +111,7 @@ class _BusinessLocationRegisterScreenState
         address: address,
         phone: phone,
         email: email,
+        businessType: _businessType,
         depositYn: depositYn,
         depositAmount: depositAmount,
         remark: remark,
@@ -119,18 +123,18 @@ class _BusinessLocationRegisterScreenState
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(widget.locationId != null
-                ? '사업장 정보가 수정되었습니다'
-                : '사업장이 등록되었습니다'),
+            content: Text(
+              widget.locationId != null ? '사업장 정보가 수정되었습니다' : '사업장이 등록되었습니다',
+            ),
           ),
         );
         Navigator.pop(context, true);
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('오류가 발생했습니다: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('오류가 발생했습니다: $e')));
       }
     } finally {
       if (mounted) {
@@ -171,9 +175,7 @@ class _BusinessLocationRegisterScreenState
           if (_isLoading)
             Container(
               color: Colors.black26,
-              child: const Center(
-                child: CircularProgressIndicator(),
-              ),
+              child: const Center(child: CircularProgressIndicator()),
             ),
         ],
       ),
@@ -216,6 +218,27 @@ class _BusinessLocationRegisterScreenState
               final digitsOnly = value.replaceAll(RegExp(r'[^0-9]'), '');
               if (digitsOnly.length != 10) {
                 return '사업자 번호 10자리를 입력해주세요';
+              }
+              return null;
+            },
+          ),
+          const SizedBox(height: 16),
+          DropdownButtonFormField<String>(
+            value: _businessType,
+            decoration: const InputDecoration(
+              labelText: '사업장 종류',
+              prefixIcon: Icon(Icons.category),
+            ),
+            items: const [
+              DropdownMenuItem(value: 'OUT', child: Text('출장')),
+              DropdownMenuItem(value: 'PARTNER', child: Text('제휴')),
+            ],
+            onChanged: _isLoading
+                ? null
+                : (value) => setState(() => _businessType = value),
+            validator: (value) {
+              if (value == null || value.isEmpty) {
+                return '사업장 종류를 선택해주세요';
               }
               return null;
             },

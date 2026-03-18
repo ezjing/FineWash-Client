@@ -37,7 +37,7 @@ class _BusinessLocationManagementScreenState
     final businessService = context.read<BusinessService>();
     await businessService.searchLogic1();
   }
- 
+
   Future<void> _openAddRoomScreen(BuildContext context, int busMstIdx) async {
     final saved = await Navigator.push<bool>(
       context,
@@ -187,6 +187,11 @@ class _LocationCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final details = business.businessDetails;
     final roomCount = details.length;
+    final businessTypeLabel = switch (business.businessType) {
+      'OUT' => '출장',
+      'PARTNER' => '제휴',
+      _ => '-',
+    };
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
       elevation: 0,
@@ -271,6 +276,24 @@ class _LocationCard extends StatelessWidget {
                       const SizedBox(width: 8),
                       Text(
                         business.phone ?? '-',
+                        style: const TextStyle(
+                          fontSize: 14,
+                          color: AppColors.textSecondary,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      Icon(
+                        Icons.category,
+                        size: 16,
+                        color: AppColors.textSecondary,
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        businessTypeLabel,
                         style: const TextStyle(
                           fontSize: 14,
                           color: AppColors.textSecondary,

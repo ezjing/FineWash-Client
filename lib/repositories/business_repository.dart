@@ -46,5 +46,10 @@ class BusinessRepository {
   Future<Map<String, dynamic>> saveLogic5(int busDtlIdx) {
     return ApiClient.delete('/businesses/rooms/$busDtlIdx');
   }
+
+  // BusinessController.SaveLogic6: 사업장(MST) 삭제
+  Future<Map<String, dynamic>> saveLogic6(int busMstIdx) {
+    return ApiClient.delete('/businesses/$busMstIdx');
+  }
 }
 

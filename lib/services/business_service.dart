@@ -182,9 +182,12 @@ class BusinessService extends ChangeNotifier {
         'roomName': roomName.trim(),
         'activeYn': activeYn,
       };
-      if (startDate != null && startDate.isNotEmpty)
+      if (startDate != null && startDate.isNotEmpty) {
         body['startDate'] = startDate;
-      if (endDate != null && endDate.isNotEmpty) body['endDate'] = endDate;
+      }
+      if (endDate != null && endDate.isNotEmpty) {
+        body['endDate'] = endDate;
+      }
 
       final response = await _businessRepository.saveLogic3(body);
       if (response['success'] == true) {
@@ -267,5 +270,31 @@ class BusinessService extends ChangeNotifier {
   void clearCurrentBusiness() {
     _currentBusiness = null;
     notifyListeners();
+  }
+
+  /// 사업장(MST) 삭제 (SaveLogic6)
+  Future<bool> deleteBusiness({required int busMstIdx}) async {
+    _isLoading = true;
+    notifyListeners();
+    try {
+      final response = await _businessRepository.saveLogic6(busMstIdx);
+      if (response['success'] == true && response['deleted'] == true) {
+        _businesses =
+            _businesses.where((b) => b.busMstIdx != busMstIdx).toList();
+        if (_currentBusiness?.busMstIdx == busMstIdx) {
+          _currentBusiness = null;
+        }
+        _isLoading = false;
+        notifyListeners();
+        return true;
+      }
+      _isLoading = false;
+      notifyListeners();
+      return false;
+    } catch (e) {
+      _isLoading = false;
+      notifyListeners();
+      rethrow;
+    }
   }
 }

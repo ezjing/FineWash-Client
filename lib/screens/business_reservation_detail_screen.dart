@@ -40,11 +40,11 @@ class _BusinessReservationDetailScreenState
 
     try {
       final ok = await context.read<ReservationService>().approveReservation(
-            resvIdx: widget.reservation.resvIdx,
-            date: _selectedDate,
-            time: _selectedTime,
-            estimatedDuration: _estimatedDuration,
-          );
+        resvIdx: widget.reservation.resvIdx,
+        date: _selectedDate,
+        time: _selectedTime,
+        estimatedDuration: _estimatedDuration,
+      );
 
       if (ok) {
         if (mounted) {
@@ -55,9 +55,9 @@ class _BusinessReservationDetailScreenState
         }
       } else {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('예약 승인에 실패했습니다')),
-          );
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(const SnackBar(content: Text('예약 승인에 실패했습니다')));
         }
       }
     } catch (e) {
@@ -94,13 +94,14 @@ class _BusinessReservationDetailScreenState
     );
 
     if (confirmed != true) return;
+    if (!mounted) return;
 
     setState(() => _isLoading = true);
 
     try {
-      final ok = await context
-          .read<ReservationService>()
-          .rejectReservation(widget.reservation.resvIdx);
+      final ok = await context.read<ReservationService>().rejectReservation(
+        widget.reservation.resvIdx,
+      );
 
       if (ok) {
         if (mounted) {
@@ -111,9 +112,9 @@ class _BusinessReservationDetailScreenState
         }
       } else {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('예약 거절에 실패했습니다')),
-          );
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(const SnackBar(content: Text('예약 거절에 실패했습니다')));
         }
       }
     } catch (e) {
@@ -220,10 +221,10 @@ class _BusinessReservationDetailScreenState
                           ),
                           decoration: BoxDecoration(
                             color: isPending
-                                ? AppColors.warning.withOpacity(0.1)
+                                ? AppColors.warning.withAlpha((0.1 * 255).round())
                                 : reservation.contractYn == 'Y'
-                                ? AppColors.success.withOpacity(0.1)
-                                : AppColors.error.withOpacity(0.1),
+                                ? AppColors.success.withAlpha((0.1 * 255).round())
+                                : AppColors.error.withAlpha((0.1 * 255).round()),
                             borderRadius: BorderRadius.circular(12),
                           ),
                           child: Text(

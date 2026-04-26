@@ -7,9 +7,7 @@ class AddressService extends ChangeNotifier {
   bool _isLoading = false;
   bool get isLoading => _isLoading;
 
-  Future<Map<String, double>?> geocodeAddress({
-    required String address,
-  }) async {
+  Future<Map<String, double>?> geocodeAddress({required String address}) async {
     _isLoading = true;
     notifyListeners();
     try {
@@ -20,4 +18,3 @@ class AddressService extends ChangeNotifier {
     }
   }
 }
-

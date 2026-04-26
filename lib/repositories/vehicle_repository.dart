@@ -11,4 +11,3 @@ class VehicleRepository {
     return ApiClient.post('/vehicles', body);
   }
 }
-

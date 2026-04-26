@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../models/product_model.dart';
 import '../utils/app_colors.dart';
+import '../utils/currency_formatter.dart';
 
 class ShopScreen extends StatefulWidget {
   const ShopScreen({super.key});
@@ -105,7 +106,7 @@ class _ShopScreenState extends State<ShopScreen> {
                     borderRadius: BorderRadius.circular(16),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withOpacity(0.05),
+                        color: Colors.black.withAlpha((0.05 * 255).round()),
                         blurRadius: 10,
                         offset: const Offset(0, 4),
                       ),
@@ -159,7 +160,7 @@ class _ShopScreenState extends State<ShopScreen> {
                               ),
                               const Spacer(),
                               Text(
-                                '${product.price.toString().replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (m) => '${m[1]},')}원',
+                                formatWonWithSuffix(product.price),
                                 style: const TextStyle(
                                   fontSize: 16,
                                   fontWeight: FontWeight.bold,
@@ -214,7 +215,7 @@ class _ShopScreenState extends State<ShopScreen> {
                 color: Colors.white,
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.05),
+                    color: Colors.black.withAlpha((0.05 * 255).round()),
                     blurRadius: 10,
                     offset: const Offset(0, -4),
                   ),

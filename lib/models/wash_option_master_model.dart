@@ -39,11 +39,11 @@ class WashOptionMasterModel {
       seq: _int(json['seq']) ?? 0,
       value1: _int(json['value1']),
       value2: _int(json['value2']),
-      details: dtl
+      details:
+          dtl
               ?.map(
-                (e) => WashOptionDetailModel.fromJson(
-                  e as Map<String, dynamic>,
-                ),
+                (e) =>
+                    WashOptionDetailModel.fromJson(e as Map<String, dynamic>),
               )
               .toList() ??
           [],

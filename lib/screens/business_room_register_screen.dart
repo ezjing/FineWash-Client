@@ -111,35 +111,31 @@ class _BusinessRoomRegisterScreenState
 
       final ok = widget.isEditMode
           ? (await businessService.updateRoom(
-                busDtlIdx: widget.busDtlIdx!,
-                roomName: roomName,
-                activeYn: activeYn,
-                startDate: startDate,
-                endDate: endDate,
-              )) !=
-              null
+                  busDtlIdx: widget.busDtlIdx!,
+                  roomName: roomName,
+                  activeYn: activeYn,
+                  startDate: startDate,
+                  endDate: endDate,
+                )) !=
+                null
           : await businessService.addRoom(
-                busMstIdx: widget.busMstIdx,
-                roomName: roomName,
-                activeYn: activeYn,
-                startDate: startDate,
-                endDate: endDate,
-              );
+              busMstIdx: widget.busMstIdx,
+              roomName: roomName,
+              activeYn: activeYn,
+              startDate: startDate,
+              endDate: endDate,
+            );
 
       if (!mounted) return;
       if (ok) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(
+        ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(widget.isEditMode ? '룸이 수정되었습니다' : '룸이 추가되었습니다'),
           ),
         );
         Navigator.pop(context, true);
       } else {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(
+        ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(widget.isEditMode ? '룸 수정에 실패했습니다' : '룸 추가에 실패했습니다'),
           ),
@@ -159,9 +155,7 @@ class _BusinessRoomRegisterScreenState
   Widget build(BuildContext context) {
     final mediaQuery = MediaQuery.of(context);
     return Scaffold(
-      appBar: AppBar(
-        title: Text(widget.isEditMode ? '룸 수정' : '룸 추가'),
-      ),
+      appBar: AppBar(title: Text(widget.isEditMode ? '룸 수정' : '룸 추가')),
       body: Stack(
         children: [
           SingleChildScrollView(

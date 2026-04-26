@@ -4,10 +4,7 @@ import '../utils/app_colors.dart';
 class BusinessScheduleEventScreen extends StatefulWidget {
   final DateTime selectedDate;
 
-  const BusinessScheduleEventScreen({
-    super.key,
-    required this.selectedDate,
-  });
+  const BusinessScheduleEventScreen({super.key, required this.selectedDate});
 
   @override
   State<BusinessScheduleEventScreen> createState() =>
@@ -228,11 +225,10 @@ class _BusinessScheduleEventScreenState
   }
 
   Future<void> _saveEvent() async {
-    if (_eventType == 'overtime' &&
-        (_startTime == null || _endTime == null)) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('연장근무 시간을 선택해주세요')),
-      );
+    if (_eventType == 'overtime' && (_startTime == null || _endTime == null)) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('연장근무 시간을 선택해주세요')));
       return;
     }
 
@@ -241,16 +237,16 @@ class _BusinessScheduleEventScreenState
       await Future.delayed(const Duration(seconds: 1));
 
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('스케줄이 저장되었습니다')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('스케줄이 저장되었습니다')));
         Navigator.pop(context, true);
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('오류가 발생했습니다: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('오류가 발생했습니다: $e')));
       }
     }
   }
@@ -278,7 +274,7 @@ class _EventTypeCard extends StatelessWidget {
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
           color: isSelected
-              ? AppColors.primary.withOpacity(0.1)
+              ? AppColors.primary.withAlpha((0.1 * 255).round())
               : Colors.white,
           border: Border.all(
             color: isSelected ? AppColors.primary : AppColors.border,
@@ -299,9 +295,7 @@ class _EventTypeCard extends StatelessWidget {
               style: TextStyle(
                 fontSize: 14,
                 fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
-                color: isSelected
-                    ? AppColors.primary
-                    : AppColors.textPrimary,
+                color: isSelected ? AppColors.primary : AppColors.textPrimary,
               ),
             ),
           ],

@@ -68,9 +68,9 @@ class _WashOptionMasterRegisterScreenState
     if (!_formKey.currentState!.validate()) return;
     final seq = int.tryParse(_seqController.text.trim());
     if (seq == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('정렬순서는 숫자로 입력하세요')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('정렬순서는 숫자로 입력하세요')));
       return;
     }
 
@@ -81,29 +81,29 @@ class _WashOptionMasterRegisterScreenState
       final v2 = _parseOptInt(_value2Controller.text);
       final ok = widget.isEditMode
           ? await svc.updateMaster(
-                woptMstIdx: widget.initial!.woptMstIdx,
-                busMstIdx: widget.busMstIdx,
-                optionName: _optionNameController.text,
-                vehicleType: _vehicleTypeController.text,
-                seq: seq,
-                value1: v1,
-                value2: v2,
-              )
+              woptMstIdx: widget.initial!.woptMstIdx,
+              busMstIdx: widget.busMstIdx,
+              optionName: _optionNameController.text,
+              vehicleType: _vehicleTypeController.text,
+              seq: seq,
+              value1: v1,
+              value2: v2,
+            )
           : await svc.saveMaster(
-                busMstIdx: widget.busMstIdx,
-                optionName: _optionNameController.text,
-                vehicleType: _vehicleTypeController.text,
-                seq: seq,
-                value1: v1,
-                value2: v2,
-              );
+              busMstIdx: widget.busMstIdx,
+              optionName: _optionNameController.text,
+              vehicleType: _vehicleTypeController.text,
+              seq: seq,
+              value1: v1,
+              value2: v2,
+            );
       if (!mounted) return;
       if (ok) {
         Navigator.pop(context, true);
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('저장에 실패했습니다')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('저장에 실패했습니다')));
       }
     } finally {
       if (mounted) setState(() => _busy = false);

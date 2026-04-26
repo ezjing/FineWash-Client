@@ -28,7 +28,6 @@ class _BusinessLocationRegisterScreenState
   bool _depositYn = false;
   String? _businessType;
   bool _isLoading = false;
-  bool _isGeocoding = false;
   double? _latitude;
   double? _longitude;
 
@@ -55,7 +54,7 @@ class _BusinessLocationRegisterScreenState
       _businessNumberController.text = business.businessNumber ?? '';
       _phoneController.text = business.phone ?? '';
       _addressController.text = business.address ?? '';
-      _addressDetailController.text = '';
+      _addressDetailController.text = business.detailAddress ?? '';
       _emailController.text = business.email ?? '';
       _depositYn = (business.depositYn ?? 'N') == 'Y';
       _depositAmountController.text =
@@ -121,9 +120,10 @@ class _BusinessLocationRegisterScreenState
 
     final businessNumber = _businessNumberController.text.trim();
     final companyName = _nameController.text.trim();
-    final address =
-        '${_addressController.text.trim()} ${_addressDetailController.text.trim()}'
-            .trim();
+    final address = _addressController.text.trim();
+    final detailAddress = _addressDetailController.text.trim().isEmpty
+        ? null
+        : _addressDetailController.text.trim();
     final phone = _phoneController.text.trim();
     final email = _emailController.text.trim().isEmpty
         ? null
@@ -143,6 +143,7 @@ class _BusinessLocationRegisterScreenState
         businessNumber: businessNumber,
         companyName: companyName,
         address: address,
+        detailAddress: detailAddress,
         phone: phone,
         latitude: _latitude,
         longitude: _longitude,
@@ -260,7 +261,7 @@ class _BusinessLocationRegisterScreenState
           ),
           const SizedBox(height: 16),
           DropdownButtonFormField<String>(
-            value: _businessType,
+            initialValue: _businessType,
             decoration: const InputDecoration(
               labelText: '사업장 종류',
               prefixIcon: Icon(Icons.category),
@@ -288,23 +289,11 @@ class _BusinessLocationRegisterScreenState
               labelText: '주소',
               hintText: '주소를 검색하세요',
               prefixIcon: const Icon(Icons.location_on),
-              suffixIcon: _isGeocoding
-                  ? const SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: Padding(
-                        padding: EdgeInsets.all(12),
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      ),
-                    )
-                  : const Icon(Icons.search),
+              suffixIcon: const Icon(Icons.search),
             ),
             validator: (value) {
               if (value == null || value.isEmpty) {
                 return '주소를 입력해주세요';
-              }
-              if (_isGeocoding) {
-                return '주소 좌표 확인 중입니다. 잠시만 기다려주세요';
               }
               if (_latitude == null || _longitude == null) {
                 return '주소 검색 후 선택해주세요 (위도/경도 필요)';

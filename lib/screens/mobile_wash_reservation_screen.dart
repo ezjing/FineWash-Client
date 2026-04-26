@@ -7,6 +7,7 @@ import '../services/reservation_service.dart';
 import '../services/payment_service.dart';
 import '../services/auth_service.dart';
 import '../utils/app_colors.dart';
+import '../utils/currency_formatter.dart';
 import 'vehicle_registration_screen.dart';
 import 'reservation_confirmation_screen.dart';
 import 'address_search_screen.dart';
@@ -277,6 +278,7 @@ class _MobileWashReservationScreenState
                       builder: (_) => const VehicleRegistrationScreen(),
                     ),
                   );
+                  if (!context.mounted) return;
                   if (result == true) {
                     // 차량 등록 후 목록 새로고침
                     final vehicleService = Provider.of<VehicleService>(
@@ -324,14 +326,12 @@ class _MobileWashReservationScreenState
                     hint: const Text('차량을 선택하세요'),
                     isExpanded: true,
                     items: [
-                      ...vehicles
-                          .map(
-                            (v) => DropdownMenuItem<int>(
-                              value: v.vehIdx,
-                              child: Text(v.displayName),
-                            ),
-                          )
-                          .toList(),
+                      ...vehicles.map(
+                        (v) => DropdownMenuItem<int>(
+                          value: v.vehIdx,
+                          child: Text(v.displayName),
+                        ),
+                      ),
                       const DropdownMenuItem<int>(
                         value: -1,
                         child: Row(
@@ -358,6 +358,7 @@ class _MobileWashReservationScreenState
                             builder: (_) => const VehicleRegistrationScreen(),
                           ),
                         );
+                        if (!context.mounted) return;
                         if (result == true) {
                           // 차량 등록 후 목록 새로고침
                           final vehicleService = Provider.of<VehicleService>(
@@ -399,7 +400,7 @@ class _MobileWashReservationScreenState
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
                       color: _selectedServiceId == service.id
-                          ? AppColors.primary.withOpacity(0.1)
+                          ? AppColors.primary.withAlpha((0.1 * 255).round())
                           : Colors.white,
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(
@@ -436,7 +437,7 @@ class _MobileWashReservationScreenState
                           ],
                         ),
                         Text(
-                          '${service.price.toString().replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (m) => '${m[1]},')}원',
+                          formatWonWithSuffix(service.price),
                           style: TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.w600,
@@ -579,7 +580,7 @@ class _MobileWashReservationScreenState
                       onSelected: (selected) => setState(
                         () => _selectedTime = selected ? time : null,
                       ),
-                      selectedColor: AppColors.primary.withOpacity(0.2),
+                      selectedColor: AppColors.primary.withAlpha((0.2 * 255).round()),
                       labelStyle: TextStyle(
                         color: _selectedTime == time
                             ? AppColors.primary

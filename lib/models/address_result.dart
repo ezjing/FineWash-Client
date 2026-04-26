@@ -39,10 +39,7 @@ class AddressResult {
     );
   }
 
-  AddressResult copyWith({
-    double? latitude,
-    double? longitude,
-  }) {
+  AddressResult copyWith({double? latitude, double? longitude}) {
     return AddressResult(
       address: address,
       jibunAddress: jibunAddress,
@@ -78,4 +75,3 @@ class AddressResult {
     return '[$zonecode] $fullAddress';
   }
 }
-

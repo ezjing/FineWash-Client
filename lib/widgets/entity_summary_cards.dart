@@ -36,6 +36,10 @@ class BusinessMasterSummaryCard extends StatelessWidget {
     final depositLine = business.depositYn == 'Y'
         ? '예약금 ${_formatThousands(business.depositAmount ?? 0)}원'
         : '예약금 미사용';
+    final addressLine = [
+      business.address,
+      business.detailAddress,
+    ].whereType<String>().map((s) => s.trim()).where((s) => s.isNotEmpty).join(' ');
     final businessTypeLabel = switch (business.businessType) {
       'OUT' => '출장',
       'PARTNER' => '제휴',
@@ -93,7 +97,7 @@ class BusinessMasterSummaryCard extends StatelessWidget {
               const SizedBox(height: 12),
               SummaryIconInfoRow(
                 icon: Icons.location_on,
-                text: business.address ?? '-',
+                text: addressLine.isEmpty ? '-' : addressLine,
               ),
               const SizedBox(height: 8),
               SummaryIconInfoRow(
@@ -221,10 +225,7 @@ class BusinessRoomSummaryCard extends StatelessWidget {
                 text: room.isActive ? '활성' : '비활성',
               ),
               const SizedBox(height: 8),
-              SummaryIconInfoRow(
-                icon: Icons.calendar_today,
-                text: _periodLine,
-              ),
+              SummaryIconInfoRow(icon: Icons.calendar_today, text: _periodLine),
               const SizedBox(height: 8),
               SummaryIconInfoRow(
                 icon: Icons.tag,
@@ -257,10 +258,7 @@ class BusinessRoomSummaryCard extends StatelessWidget {
   }
 }
 
-Widget _wrapRoomCardTap({
-  required VoidCallback? onTap,
-  required Widget child,
-}) {
+Widget _wrapRoomCardTap({required VoidCallback? onTap, required Widget child}) {
   if (onTap == null) return child;
   return InkWell(
     onTap: onTap,
@@ -535,9 +533,7 @@ class _WashOptionDetailTile extends StatelessWidget {
               IconButton(
                 icon: const Icon(Icons.delete_outline, size: 20),
                 onPressed: onDelete,
-                style: IconButton.styleFrom(
-                  foregroundColor: AppColors.error,
-                ),
+                style: IconButton.styleFrom(foregroundColor: AppColors.error),
                 tooltip: 'DTL 삭제',
               ),
             ],

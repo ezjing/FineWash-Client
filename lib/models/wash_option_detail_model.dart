@@ -38,12 +38,12 @@ class WashOptionDetailModel {
   }
 
   Map<String, dynamic> toJson() => {
-        'woptDtlIdx': woptDtlIdx,
-        'woptMstIdx': woptMstIdx,
-        'optionName': optionName,
-        'vehicleType': vehicleType,
-        'seq': seq,
-        'value1': value1,
-        'value2': value2,
-      };
+    'woptDtlIdx': woptDtlIdx,
+    'woptMstIdx': woptMstIdx,
+    'optionName': optionName,
+    'vehicleType': vehicleType,
+    'seq': seq,
+    'value1': value1,
+    'value2': value2,
+  };
 }

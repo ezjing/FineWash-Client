@@ -12,9 +12,7 @@ class BusinessMyPageScreen extends StatelessWidget {
     final user = authService.currentUser;
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('마이페이지'),
-      ),
+      appBar: AppBar(title: const Text('마이페이지')),
       body: SingleChildScrollView(
         child: Column(
           children: [
@@ -31,7 +29,7 @@ class BusinessMyPageScreen extends StatelessWidget {
                     width: 64,
                     height: 64,
                     decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.2),
+                      color: Colors.white.withAlpha((0.2 * 255).round()),
                       borderRadius: BorderRadius.circular(16),
                     ),
                     child: const Icon(
@@ -52,10 +50,7 @@ class BusinessMyPageScreen extends StatelessWidget {
                   const SizedBox(height: 4),
                   Text(
                     user?.email ?? '',
-                    style: const TextStyle(
-                      fontSize: 14,
-                      color: Colors.white70,
-                    ),
+                    style: const TextStyle(fontSize: 14, color: Colors.white70),
                   ),
                 ],
               ),
@@ -235,7 +230,8 @@ class BusinessMyPageScreen extends StatelessWidget {
                         TextButton(
                           onPressed: () => Navigator.pop(context, true),
                           style: TextButton.styleFrom(
-                              foregroundColor: AppColors.error),
+                            foregroundColor: AppColors.error,
+                          ),
                           child: const Text('로그아웃'),
                         ),
                       ],
@@ -269,10 +265,7 @@ class _MenuSection extends StatelessWidget {
   final String title;
   final List<_MenuItem> items;
 
-  const _MenuSection({
-    required this.title,
-    required this.items,
-  });
+  const _MenuSection({required this.title, required this.items});
 
   @override
   Widget build(BuildContext context) {
@@ -292,9 +285,7 @@ class _MenuSection extends StatelessWidget {
         ),
         Container(
           color: Colors.white,
-          child: Column(
-            children: items,
-          ),
+          child: Column(children: items),
         ),
       ],
     );
@@ -319,9 +310,7 @@ class _MenuItem extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
         decoration: const BoxDecoration(
-          border: Border(
-            bottom: BorderSide(color: AppColors.border),
-          ),
+          border: Border(bottom: BorderSide(color: AppColors.border)),
         ),
         child: Row(
           children: [
@@ -336,10 +325,7 @@ class _MenuItem extends StatelessWidget {
                 ),
               ),
             ),
-            Icon(
-              Icons.chevron_right,
-              color: AppColors.textTertiary,
-            ),
+            Icon(Icons.chevron_right, color: AppColors.textTertiary),
           ],
         ),
       ),

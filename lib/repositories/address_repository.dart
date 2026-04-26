@@ -12,11 +12,9 @@ class AddressRepository {
       throw Exception('KAKAO_REST_API_KEY가 설정되어 있지 않습니다.');
     }
 
-    final uri = Uri.https(
-      'dapi.kakao.com',
-      '/v2/local/search/address.json',
-      {'query': query},
-    );
+    final uri = Uri.https('dapi.kakao.com', '/v2/local/search/address.json', {
+      'query': query,
+    });
 
     final response = await http.get(
       uri,
@@ -52,4 +50,3 @@ class AddressRepository {
     return double.tryParse('$v');
   }
 }
-

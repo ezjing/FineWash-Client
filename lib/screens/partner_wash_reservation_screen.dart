@@ -9,6 +9,7 @@ import '../services/reservation_service.dart';
 import '../services/payment_service.dart';
 import '../services/auth_service.dart';
 import '../utils/app_colors.dart';
+import '../utils/currency_formatter.dart';
 import 'vehicle_registration_screen.dart';
 import 'reservation_confirmation_screen.dart';
 import 'address_search_screen.dart';
@@ -119,6 +120,7 @@ class _PartnerWashReservationScreenState
       context,
       MaterialPageRoute(builder: (_) => const AddressSearchScreen()),
     );
+    if (!mounted) return;
     if (result != null) {
       final businessService = Provider.of<BusinessService>(
         context,
@@ -511,210 +513,209 @@ class _PartnerWashReservationScreenState
               ],
             ),
           )
-        else
-          ...[
-            if (businessService.isNearbyLoading)
-              const Padding(
-                padding: EdgeInsets.symmetric(vertical: 16),
-                child: Center(
-                  child: CircularProgressIndicator(color: AppColors.secondary),
-                ),
-              )
-            else if (businessService.nearbyErrorMessage != null)
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: AppColors.surfaceVariant,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Row(
-                      children: [
-                        Icon(
-                          Icons.error_outline,
-                          color: AppColors.textSecondary,
-                          size: 20,
+        else ...[
+          if (businessService.isNearbyLoading)
+            const Padding(
+              padding: EdgeInsets.symmetric(vertical: 16),
+              child: Center(
+                child: CircularProgressIndicator(color: AppColors.secondary),
+              ),
+            )
+          else if (businessService.nearbyErrorMessage != null)
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: AppColors.surfaceVariant,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Row(
+                    children: [
+                      Icon(
+                        Icons.error_outline,
+                        color: AppColors.textSecondary,
+                        size: 20,
+                      ),
+                      SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          '가까운 세차장 목록을 불러오지 못했습니다',
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: AppColors.textSecondary,
+                          ),
                         ),
-                        SizedBox(width: 8),
-                        Expanded(
-                          child: Text(
-                            '가까운 세차장 목록을 불러오지 못했습니다',
-                            style: TextStyle(
-                              fontSize: 14,
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  OutlinedButton(
+                    onPressed: () async {
+                      final loc = _currentLocation;
+                      if (loc == null) return;
+                      await businessService.searchLogic2(
+                        latitude: loc.latitude,
+                        longitude: loc.longitude,
+                      );
+                    },
+                    style: OutlinedButton.styleFrom(
+                      side: const BorderSide(color: AppColors.border),
+                    ),
+                    child: const Text('다시 시도'),
+                  ),
+                ],
+              ),
+            )
+          else if (businessService.nearbyBusinesses.isEmpty)
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: AppColors.surfaceVariant,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: const Row(
+                children: [
+                  Icon(
+                    Icons.info_outline,
+                    color: AppColors.textSecondary,
+                    size: 20,
+                  ),
+                  SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      '주변 제휴 세차장이 없습니다',
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            )
+          else
+            ...businessService.nearbyBusinesses.asMap().entries.map((entry) {
+              final index = entry.key;
+              final business = entry.value;
+              final isLast =
+                  index == businessService.nearbyBusinesses.length - 1;
+              final room = _getSelectableRoom(business);
+              final busDtlIdx = room?.busDtlIdx;
+              final isSelectable = busDtlIdx != null;
+              final isSelected =
+                  isSelectable && _selectedBusDtlIdx == busDtlIdx;
+              final distanceText = business.distanceKm != null
+                  ? '${business.distanceKm!.toStringAsFixed(1)}km'
+                  : '-';
+              return Padding(
+                padding: EdgeInsets.only(bottom: isLast ? 0 : 12),
+                child: InkWell(
+                  onTap: isSelectable
+                      ? () => setState(() => _selectedBusDtlIdx = busDtlIdx)
+                      : null,
+                  child: Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: isSelected
+                          ? AppColors.secondary.withAlpha((0.1 * 255).round())
+                          : Colors.white,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: isSelected
+                            ? AppColors.secondary
+                            : AppColors.border,
+                        width: isSelected ? 2 : 1,
+                      ),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          business.companyName ?? '세차장',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                            color: isSelected
+                                ? AppColors.secondary
+                                : AppColors.textPrimary,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Row(
+                          children: [
+                            const Icon(
+                              Icons.location_on_outlined,
+                              size: 16,
                               color: AppColors.textSecondary,
                             ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 12),
-                    OutlinedButton(
-                      onPressed: () async {
-                        final loc = _currentLocation;
-                        if (loc == null) return;
-                        await businessService.searchLogic2(
-                          latitude: loc.latitude,
-                          longitude: loc.longitude,
-                        );
-                      },
-                      style: OutlinedButton.styleFrom(
-                        side: const BorderSide(color: AppColors.border),
-                      ),
-                      child: const Text('다시 시도'),
-                    ),
-                  ],
-                ),
-              )
-            else if (businessService.nearbyBusinesses.isEmpty)
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: AppColors.surfaceVariant,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: const Row(
-                  children: [
-                    Icon(
-                      Icons.info_outline,
-                      color: AppColors.textSecondary,
-                      size: 20,
-                    ),
-                    SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        '주변 제휴 세차장이 없습니다',
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: AppColors.textSecondary,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              )
-            else
-              ...businessService.nearbyBusinesses.asMap().entries.map((entry) {
-                final index = entry.key;
-                final business = entry.value;
-                final isLast =
-                    index == businessService.nearbyBusinesses.length - 1;
-                final room = _getSelectableRoom(business);
-                final busDtlIdx = room?.busDtlIdx;
-                final isSelectable = busDtlIdx != null;
-                final isSelected =
-                    isSelectable && _selectedBusDtlIdx == busDtlIdx;
-                final distanceText = business.distanceKm != null
-                    ? '${business.distanceKm!.toStringAsFixed(1)}km'
-                    : '-';
-                return Padding(
-                  padding: EdgeInsets.only(bottom: isLast ? 0 : 12),
-                  child: InkWell(
-                    onTap: isSelectable
-                        ? () => setState(() => _selectedBusDtlIdx = busDtlIdx)
-                        : null,
-                    child: Container(
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: isSelected
-                            ? AppColors.secondary.withOpacity(0.1)
-                            : Colors.white,
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(
-                          color: isSelected
-                              ? AppColors.secondary
-                              : AppColors.border,
-                          width: isSelected ? 2 : 1,
-                        ),
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            business.companyName ?? '세차장',
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w600,
-                              color: isSelected
-                                  ? AppColors.secondary
-                                  : AppColors.textPrimary,
+                            const SizedBox(width: 4),
+                            Expanded(
+                              child: Text(
+                                business.address ?? '-',
+                                style: const TextStyle(
+                                  fontSize: 14,
+                                  color: AppColors.textSecondary,
+                                ),
+                              ),
                             ),
-                          ),
-                          const SizedBox(height: 8),
+                          ],
+                        ),
+                        if (room?.roomName != null) ...[
+                          const SizedBox(height: 6),
                           Row(
                             children: [
                               const Icon(
-                                Icons.location_on_outlined,
+                                Icons.meeting_room_outlined,
                                 size: 16,
                                 color: AppColors.textSecondary,
                               ),
                               const SizedBox(width: 4),
                               Expanded(
                                 child: Text(
-                                  business.address ?? '-',
+                                  room!.roomName!,
                                   style: const TextStyle(
-                                    fontSize: 14,
-                                    color: AppColors.textSecondary,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                          if (room?.roomName != null) ...[
-                            const SizedBox(height: 6),
-                            Row(
-                              children: [
-                                const Icon(
-                                  Icons.meeting_room_outlined,
-                                  size: 16,
-                                  color: AppColors.textSecondary,
-                                ),
-                                const SizedBox(width: 4),
-                                Expanded(
-                                  child: Text(
-                                    room!.roomName!,
-                                    style: const TextStyle(
-                                      fontSize: 13,
-                                      color: AppColors.textSecondary,
-                                    ),
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ],
-                          const SizedBox(height: 8),
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              if (!isSelectable)
-                                const Text(
-                                  '예약 가능한 룸 정보가 없습니다',
-                                  style: TextStyle(
                                     fontSize: 13,
                                     color: AppColors.textSecondary,
                                   ),
-                                )
-                              else
-                                const SizedBox.shrink(),
-                              Text(
-                                distanceText,
-                                style: const TextStyle(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w600,
-                                  color: AppColors.secondary,
+                                  overflow: TextOverflow.ellipsis,
                                 ),
                               ),
                             ],
                           ),
                         ],
-                      ),
+                        const SizedBox(height: 8),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            if (!isSelectable)
+                              const Text(
+                                '예약 가능한 룸 정보가 없습니다',
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  color: AppColors.textSecondary,
+                                ),
+                              )
+                            else
+                              const SizedBox.shrink(),
+                            Text(
+                              distanceText,
+                              style: const TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w600,
+                                color: AppColors.secondary,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
                     ),
                   ),
-                );
-              }),
-          ],
+                ),
+              );
+            }),
+        ],
       ],
     );
   }
@@ -787,14 +788,12 @@ class _PartnerWashReservationScreenState
                 hint: const Text('차량을 선택하세요'),
                 isExpanded: true,
                 items: [
-                  ...vehicles
-                      .map(
-                        (v) => DropdownMenuItem<int>(
-                          value: v.vehIdx,
-                          child: Text(v.displayName),
-                        ),
-                      )
-                      .toList(),
+                  ...vehicles.map(
+                    (v) => DropdownMenuItem<int>(
+                      value: v.vehIdx,
+                      child: Text(v.displayName),
+                    ),
+                  ),
                   const DropdownMenuItem<int>(
                     value: -1,
                     child: Row(
@@ -821,6 +820,7 @@ class _PartnerWashReservationScreenState
                         builder: (_) => const VehicleRegistrationScreen(),
                       ),
                     );
+                    if (!mounted) return;
                     if (result == true) {
                       // 차량 등록 후 목록 새로고침
                       final vehicleService = Provider.of<VehicleService>(
@@ -868,7 +868,7 @@ class _PartnerWashReservationScreenState
                     ),
                     decoration: BoxDecoration(
                       color: _selectedMidOption == option['id']
-                          ? AppColors.secondary.withOpacity(0.1)
+                          ? AppColors.secondary.withAlpha((0.1 * 255).round())
                           : Colors.white,
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(
@@ -912,7 +912,7 @@ class _PartnerWashReservationScreenState
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
                   color: _selectedSubOption == option['id']
-                      ? AppColors.secondary.withOpacity(0.1)
+                      ? AppColors.secondary.withAlpha((0.1 * 255).round())
                       : Colors.white,
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(
@@ -956,7 +956,7 @@ class _PartnerWashReservationScreenState
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: AppColors.secondary.withOpacity(0.1),
+              color: AppColors.secondary.withAlpha((0.1 * 255).round()),
               borderRadius: BorderRadius.circular(12),
             ),
             child: Row(
@@ -971,7 +971,7 @@ class _PartnerWashReservationScreenState
                   ),
                 ),
                 Text(
-                  '${_totalPrice.toString().replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (m) => '${m[1]},')}원',
+                  formatWonWithSuffix(_totalPrice),
                   style: const TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.w700,
@@ -1049,7 +1049,8 @@ class _PartnerWashReservationScreenState
                   selected: _selectedTime == time,
                   onSelected: (selected) =>
                       setState(() => _selectedTime = selected ? time : null),
-                  selectedColor: AppColors.secondary.withOpacity(0.2),
+                  selectedColor:
+                      AppColors.secondary.withAlpha((0.2 * 255).round()),
                   labelStyle: TextStyle(
                     color: _selectedTime == time
                         ? AppColors.secondary

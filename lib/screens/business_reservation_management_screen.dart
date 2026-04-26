@@ -26,13 +26,16 @@ class _BusinessReservationManagementScreenState
   }
 
   Future<void> _loadReservations() async {
-    final reservationService =
-        Provider.of<ReservationService>(context, listen: false);
+    final reservationService = Provider.of<ReservationService>(
+      context,
+      listen: false,
+    );
     await reservationService.searchLogic1();
   }
 
   List<ReservationModel> _getFilteredReservations(
-      List<ReservationModel> reservations) {
+    List<ReservationModel> reservations,
+  ) {
     switch (_selectedFilter) {
       case 'pending':
         return reservations
@@ -51,9 +54,7 @@ class _BusinessReservationManagementScreenState
   Widget build(BuildContext context) {
     final mediaQuery = MediaQuery.of(context);
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('예약 관리'),
-      ),
+      appBar: AppBar(title: const Text('예약 관리')),
       body: Column(
         children: [
           // 필터 탭
@@ -61,9 +62,7 @@ class _BusinessReservationManagementScreenState
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             decoration: const BoxDecoration(
               color: Colors.white,
-              border: Border(
-                bottom: BorderSide(color: AppColors.border),
-              ),
+              border: Border(bottom: BorderSide(color: AppColors.border)),
             ),
             child: Row(
               children: [
@@ -102,7 +101,8 @@ class _BusinessReservationManagementScreenState
                 }
 
                 final reservations = _getFilteredReservations(
-                    reservationService.reservations);
+                  reservationService.reservations,
+                );
 
                 if (reservations.isEmpty) {
                   return Center(
@@ -145,8 +145,7 @@ class _BusinessReservationManagementScreenState
                           Navigator.push(
                             context,
                             MaterialPageRoute(
-                              builder: (_) =>
-                                  BusinessReservationDetailScreen(
+                              builder: (_) => BusinessReservationDetailScreen(
                                 reservation: reservation,
                               ),
                             ),
@@ -207,10 +206,7 @@ class _ReservationCard extends StatelessWidget {
   final ReservationModel reservation;
   final VoidCallback onTap;
 
-  const _ReservationCard({
-    required this.reservation,
-    required this.onTap,
-  });
+  const _ReservationCard({required this.reservation, required this.onTap});
 
   String _getStatusText() {
     if (reservation.contractYn == 'Y') {
@@ -261,10 +257,12 @@ class _ReservationCard extends StatelessWidget {
                     ),
                   ),
                   Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 4,
+                    ),
                     decoration: BoxDecoration(
-                      color: _getStatusColor().withOpacity(0.1),
+                      color: _getStatusColor().withAlpha((0.1 * 255).round()),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Text(
@@ -282,8 +280,11 @@ class _ReservationCard extends StatelessWidget {
               if (reservation.date != null && reservation.time != null)
                 Row(
                   children: [
-                    Icon(Icons.calendar_today,
-                        size: 16, color: AppColors.textSecondary),
+                    Icon(
+                      Icons.calendar_today,
+                      size: 16,
+                      color: AppColors.textSecondary,
+                    ),
                     const SizedBox(width: 8),
                     Text(
                       '${reservation.date} ${reservation.time}',
@@ -298,8 +299,11 @@ class _ReservationCard extends StatelessWidget {
                 const SizedBox(height: 8),
                 Row(
                   children: [
-                    Icon(Icons.location_on,
-                        size: 16, color: AppColors.textSecondary),
+                    Icon(
+                      Icons.location_on,
+                      size: 16,
+                      color: AppColors.textSecondary,
+                    ),
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
@@ -319,8 +323,11 @@ class _ReservationCard extends StatelessWidget {
                 const SizedBox(height: 8),
                 Row(
                   children: [
-                    Icon(Icons.payments,
-                        size: 16, color: AppColors.textSecondary),
+                    Icon(
+                      Icons.payments,
+                      size: 16,
+                      color: AppColors.textSecondary,
+                    ),
                     const SizedBox(width: 8),
                     Text(
                       '${reservation.paymentAmount!.toString().replaceAllMapped(RegExp(r'(\d)(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]},')}원',

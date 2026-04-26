@@ -44,9 +44,7 @@ class _BusinessScheduleManagementScreenState
             padding: const EdgeInsets.all(16),
             decoration: const BoxDecoration(
               color: Colors.white,
-              border: Border(
-                bottom: BorderSide(color: AppColors.border),
-              ),
+              border: Border(bottom: BorderSide(color: AppColors.border)),
             ),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -85,9 +83,7 @@ class _BusinessScheduleManagementScreenState
             ),
           ),
           // 캘린더
-          Expanded(
-            child: _buildCalendar(),
-          ),
+          Expanded(child: _buildCalendar()),
           SizedBox(height: mediaQuery.padding.bottom),
         ],
       ),
@@ -107,22 +103,24 @@ class _BusinessScheduleManagementScreenState
           // 요일 헤더
           Row(
             children: ['일', '월', '화', '수', '목', '금', '토']
-                .map((day) => Expanded(
-                      child: Center(
-                        child: Text(
-                          day,
-                          style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w600,
-                            color: day == '일'
-                                ? AppColors.error
-                                : day == '토'
-                                    ? AppColors.primary
-                                    : AppColors.textPrimary,
-                          ),
+                .map(
+                  (day) => Expanded(
+                    child: Center(
+                      child: Text(
+                        day,
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: day == '일'
+                              ? AppColors.error
+                              : day == '토'
+                              ? AppColors.primary
+                              : AppColors.textPrimary,
                         ),
                       ),
-                    ))
+                    ),
+                  ),
+                )
                 .toList(),
           ),
           const SizedBox(height: 8),
@@ -142,8 +140,13 @@ class _BusinessScheduleManagementScreenState
                 }
 
                 final day = index - firstDayOfWeek + 1;
-                final date = DateTime(_selectedMonth.year, _selectedMonth.month, day);
-                final isToday = date.year == DateTime.now().year &&
+                final date = DateTime(
+                  _selectedMonth.year,
+                  _selectedMonth.month,
+                  day,
+                );
+                final isToday =
+                    date.year == DateTime.now().year &&
                     date.month == DateTime.now().month &&
                     date.day == DateTime.now().day;
 
@@ -155,21 +158,18 @@ class _BusinessScheduleManagementScreenState
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (_) => BusinessScheduleEventScreen(
-                          selectedDate: date,
-                        ),
+                        builder: (_) =>
+                            BusinessScheduleEventScreen(selectedDate: date),
                       ),
                     );
                   },
                   child: Container(
                     decoration: BoxDecoration(
                       color: isToday
-                          ? AppColors.primary.withOpacity(0.1)
+                          ? AppColors.primary.withAlpha((0.1 * 255).round())
                           : Colors.white,
                       border: Border.all(
-                        color: isToday
-                            ? AppColors.primary
-                            : AppColors.border,
+                        color: isToday ? AppColors.primary : AppColors.border,
                         width: isToday ? 2 : 1,
                       ),
                       borderRadius: BorderRadius.circular(8),
@@ -250,7 +250,10 @@ class _WeeklyScheduleDialogState extends State<_WeeklyScheduleDialog> {
   }
 
   Future<void> _selectTime(
-      String day, String type, BuildContext context) async {
+    String day,
+    String type,
+    BuildContext context,
+  ) async {
     final currentTime = _schedule[day]![type] ?? '09:00';
     final parts = currentTime.split(':');
     final initialTime = TimeOfDay(
@@ -306,13 +309,16 @@ class _WeeklyScheduleDialogState extends State<_WeeklyScheduleDialog> {
               child: ListView(
                 shrinkWrap: true,
                 children: ['월', '화', '수', '목', '금', '토', '일']
-                    .map((day) => _DayScheduleRow(
-                          day: day,
-                          schedule: _schedule[day]!,
-                          onStartTimeTap: () => _selectTime(day, 'start', context),
-                          onEndTimeTap: () => _selectTime(day, 'end', context),
-                          onDayOffToggle: () => _toggleDayOff(day),
-                        ))
+                    .map(
+                      (day) => _DayScheduleRow(
+                        day: day,
+                        schedule: _schedule[day]!,
+                        onStartTimeTap: () =>
+                            _selectTime(day, 'start', context),
+                        onEndTimeTap: () => _selectTime(day, 'end', context),
+                        onDayOffToggle: () => _toggleDayOff(day),
+                      ),
+                    )
                     .toList(),
               ),
             ),
@@ -383,7 +389,9 @@ class _DayScheduleRow extends StatelessWidget {
                     onTap: isDayOff ? null : onStartTimeTap,
                     child: Container(
                       padding: const EdgeInsets.symmetric(
-                          horizontal: 12, vertical: 8),
+                        horizontal: 12,
+                        vertical: 8,
+                      ),
                       decoration: BoxDecoration(
                         border: Border.all(color: AppColors.border),
                         borderRadius: BorderRadius.circular(8),
@@ -414,7 +422,9 @@ class _DayScheduleRow extends StatelessWidget {
                       onTap: onEndTimeTap,
                       child: Container(
                         padding: const EdgeInsets.symmetric(
-                            horizontal: 12, vertical: 8),
+                          horizontal: 12,
+                          vertical: 8,
+                        ),
                         decoration: BoxDecoration(
                           border: Border.all(color: AppColors.border),
                           borderRadius: BorderRadius.circular(8),
@@ -435,10 +445,7 @@ class _DayScheduleRow extends StatelessWidget {
             ),
           ),
           const SizedBox(width: 8),
-          Checkbox(
-            value: isDayOff,
-            onChanged: (_) => onDayOffToggle(),
-          ),
+          Checkbox(value: isDayOff, onChanged: (_) => onDayOffToggle()),
         ],
       ),
     );

@@ -66,9 +66,9 @@ class _AddressSearchScreenState extends State<AddressSearchScreen> {
       final lng = coords?['longitude'];
       if (lat == null || lng == null) {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('좌표 정보를 찾을 수 없습니다.')),
-          );
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(const SnackBar(content: Text('좌표 정보를 찾을 수 없습니다.')));
         }
         return;
       }
@@ -78,9 +78,9 @@ class _AddressSearchScreenState extends State<AddressSearchScreen> {
     } catch (e) {
       debugPrint('주소 파싱 오류: $e');
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('주소 처리 중 오류가 발생했습니다: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('주소 처리 중 오류가 발생했습니다: $e')));
       }
     } finally {
       if (mounted) setState(() => _isGeocoding = false);

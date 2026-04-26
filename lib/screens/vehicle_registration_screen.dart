@@ -80,7 +80,7 @@ class _VehicleRegistrationScreenState extends State<VehicleRegistrationScreen> {
                   borderRadius: BorderRadius.circular(16),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.05),
+                      color: Colors.black.withAlpha((0.05 * 255).round()),
                       blurRadius: 10,
                       offset: const Offset(0, 4),
                     ),
@@ -92,7 +92,7 @@ class _VehicleRegistrationScreenState extends State<VehicleRegistrationScreen> {
                       width: 64,
                       height: 64,
                       decoration: BoxDecoration(
-                        color: AppColors.primary.withOpacity(0.1),
+                        color: AppColors.primary.withAlpha((0.1 * 255).round()),
                         borderRadius: BorderRadius.circular(16),
                       ),
                       child: const Icon(

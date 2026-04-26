@@ -35,18 +35,9 @@ class _BusinessDashboardScreenState extends State<BusinessDashboardScreen> {
               });
             },
             itemBuilder: (context) => [
-              const PopupMenuItem(
-                value: 'week',
-                child: Text('주간'),
-              ),
-              const PopupMenuItem(
-                value: 'month',
-                child: Text('월간'),
-              ),
-              const PopupMenuItem(
-                value: 'year',
-                child: Text('연간'),
-              ),
+              const PopupMenuItem(value: 'week', child: Text('주간')),
+              const PopupMenuItem(value: 'month', child: Text('월간')),
+              const PopupMenuItem(value: 'year', child: Text('연간')),
             ],
           ),
         ],
@@ -87,14 +78,18 @@ class _BusinessDashboardScreenState extends State<BusinessDashboardScreen> {
                             setState(() => _selectedLocationId = null);
                           },
                         ),
-                        ..._locations.map((location) => _LocationChip(
-                              label: location['name'] as String,
-                              isSelected: _selectedLocationId == location['id'],
-                              onTap: () {
-                                setState(() =>
-                                    _selectedLocationId = location['id'] as int);
-                              },
-                            )),
+                        ..._locations.map(
+                          (location) => _LocationChip(
+                            label: location['name'] as String,
+                            isSelected: _selectedLocationId == location['id'],
+                            onTap: () {
+                              setState(
+                                () =>
+                                    _selectedLocationId = location['id'] as int,
+                              );
+                            },
+                          ),
+                        ),
                       ],
                     ),
                   ],
@@ -316,11 +311,13 @@ class _StatCard extends StatelessWidget {
               children: [
                 Icon(icon, color: color, size: 24),
                 Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
+                  ),
                   decoration: BoxDecoration(
                     color: (isPositive ? AppColors.success : AppColors.error)
-                        .withOpacity(0.1),
+                        .withAlpha((0.1 * 255).round()),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Text(
@@ -421,10 +418,7 @@ class _TimeSlotBar extends StatelessWidget {
   final String label;
   final double value; // 0.0 ~ 1.0
 
-  const _TimeSlotBar({
-    required this.label,
-    required this.value,
-  });
+  const _TimeSlotBar({required this.label, required this.value});
 
   @override
   Widget build(BuildContext context) {

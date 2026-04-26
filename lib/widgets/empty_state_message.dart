@@ -28,11 +28,7 @@ class EmptyStateMessage extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.center,
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(
-              icon,
-              size: 48,
-              color: AppColors.textTertiary,
-            ),
+            Icon(icon, size: 48, color: AppColors.textTertiary),
             const SizedBox(height: 16),
             Text(
               title,

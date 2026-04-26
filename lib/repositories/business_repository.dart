@@ -63,4 +63,3 @@ class BusinessRepository {
     return ApiClient.delete('/businesses/$busMstIdx');
   }
 }
-

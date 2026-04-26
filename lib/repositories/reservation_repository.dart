@@ -38,4 +38,3 @@ class ReservationRepository {
     return ApiClient.put('/reservations/$resvIdx/reject', {});
   }
 }
-

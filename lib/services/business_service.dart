@@ -100,8 +100,7 @@ class BusinessService extends ChangeNotifier {
     _isLoading = true;
     notifyListeners();
     try {
-      final response =
-          await _businessRepository.searchLogic3(busMstIdx);
+      final response = await _businessRepository.searchLogic3(busMstIdx);
       if (response['success'] == true && response['business'] != null) {
         _currentBusiness = BusinessMasterModel.fromJson(response['business']);
         _isLoading = false;
@@ -124,6 +123,7 @@ class BusinessService extends ChangeNotifier {
     required String businessNumber,
     required String companyName,
     required String address,
+    String? detailAddress,
     required String phone,
     double? latitude,
     double? longitude,
@@ -140,6 +140,8 @@ class BusinessService extends ChangeNotifier {
         'businessNumber': businessNumber.trim(),
         'companyName': companyName.trim(),
         'address': address.trim(),
+        if (detailAddress != null && detailAddress.trim().isNotEmpty)
+          'detailAddress': detailAddress.trim(),
         'phone': phone.trim(),
         if (latitude != null) 'latitude': latitude,
         if (longitude != null) 'longitude': longitude,
@@ -189,8 +191,7 @@ class BusinessService extends ChangeNotifier {
     _isLoading = true;
     notifyListeners();
     try {
-      final response =
-          await _businessRepository.searchLogic1(busDtlIdx);
+      final response = await _businessRepository.searchLogic1(busDtlIdx);
       if (response['success'] == true && response['room'] != null) {
         _currentRoom = BusinessDetailModel.fromJson(
           response['room'] as Map<String, dynamic>,
@@ -276,8 +277,7 @@ class BusinessService extends ChangeNotifier {
       if (startDate != null) body['startDate'] = startDate;
       if (endDate != null) body['endDate'] = endDate;
 
-      final response =
-          await _businessRepository.saveLogic4(busDtlIdx, body);
+      final response = await _businessRepository.saveLogic4(busDtlIdx, body);
       if (response['success'] == true && response['room'] != null) {
         final updated = BusinessDetailModel.fromJson(
           response['room'] as Map<String, dynamic>,
@@ -333,8 +333,9 @@ class BusinessService extends ChangeNotifier {
     try {
       final response = await _businessRepository.saveLogic6(busMstIdx);
       if (response['success'] == true && response['deleted'] == true) {
-        _businesses =
-            _businesses.where((b) => b.busMstIdx != busMstIdx).toList();
+        _businesses = _businesses
+            .where((b) => b.busMstIdx != busMstIdx)
+            .toList();
         if (_currentBusiness?.busMstIdx == busMstIdx) {
           _currentBusiness = null;
         }

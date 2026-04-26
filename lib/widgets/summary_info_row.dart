@@ -16,10 +16,7 @@ class SummaryIconInfoRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final style = const TextStyle(
-      fontSize: 14,
-      color: AppColors.textSecondary,
-    );
+    final style = const TextStyle(fontSize: 14, color: AppColors.textSecondary);
     final textWidget = Text(text, style: style);
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,

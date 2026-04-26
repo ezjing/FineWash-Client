@@ -74,8 +74,7 @@ class ReservationService extends ChangeNotifier {
         requestData['payment_amount'] = paymentAmount;
       }
 
-      final response =
-          await _reservationRepository.saveLogic1(requestData);
+      final response = await _reservationRepository.saveLogic1(requestData);
       if (response['success'] == true && response['reservation'] != null) {
         final newReservation = ReservationModel.fromJson(
           response['reservation'],
@@ -133,8 +132,7 @@ class ReservationService extends ChangeNotifier {
         requestData['payment_amount'] = paymentAmount;
       }
 
-      final response =
-          await _reservationRepository.saveLogic1(requestData);
+      final response = await _reservationRepository.saveLogic1(requestData);
       if (response['success'] == true && response['reservation'] != null) {
         final newReservation = ReservationModel.fromJson(
           response['reservation'],

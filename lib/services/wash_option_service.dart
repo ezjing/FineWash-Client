@@ -28,9 +28,7 @@ class WashOptionService extends ChangeNotifier {
       if (response['success'] == true && response['rows'] != null) {
         _masters = (response['rows'] as List)
             .map(
-              (e) => WashOptionMasterModel.fromJson(
-                e as Map<String, dynamic>,
-              ),
+              (e) => WashOptionMasterModel.fromJson(e as Map<String, dynamic>),
             )
             .toList();
       } else {

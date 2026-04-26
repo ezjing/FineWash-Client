@@ -72,7 +72,8 @@ class BusinessHomeScreen extends StatelessWidget {
                         onTap: () => Navigator.push(
                           context,
                           MaterialPageRoute(
-                            builder: (_) => const BusinessReservationManagementScreen(),
+                            builder: (_) =>
+                                const BusinessReservationManagementScreen(),
                           ),
                         ),
                       ),
@@ -84,7 +85,8 @@ class BusinessHomeScreen extends StatelessWidget {
                         onTap: () => Navigator.push(
                           context,
                           MaterialPageRoute(
-                            builder: (_) => const BusinessLocationManagementScreen(),
+                            builder: (_) =>
+                                const BusinessLocationManagementScreen(),
                           ),
                         ),
                       ),
@@ -96,7 +98,8 @@ class BusinessHomeScreen extends StatelessWidget {
                         onTap: () => Navigator.push(
                           context,
                           MaterialPageRoute(
-                            builder: (_) => const BusinessScheduleManagementScreen(),
+                            builder: (_) =>
+                                const BusinessScheduleManagementScreen(),
                           ),
                         ),
                       ),
@@ -166,7 +169,7 @@ class _MenuCard extends StatelessWidget {
             borderRadius: BorderRadius.circular(16),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.05),
+                color: Colors.black.withAlpha((0.05 * 255).round()),
                 blurRadius: 10,
                 offset: const Offset(0, 4),
               ),

@@ -120,7 +120,7 @@ class HomeScreen extends StatelessWidget {
                       borderRadius: BorderRadius.circular(16),
                       boxShadow: [
                         BoxShadow(
-                          color: AppColors.primary.withOpacity(0.3),
+                          color: AppColors.primary.withAlpha((0.3 * 255).round()),
                           blurRadius: 16,
                           offset: const Offset(0, 8),
                         ),
@@ -218,7 +218,7 @@ class _MenuCard extends StatelessWidget {
             borderRadius: BorderRadius.circular(16),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.05),
+                color: Colors.black.withAlpha((0.05 * 255).round()),
                 blurRadius: 10,
                 offset: const Offset(0, 4),
               ),

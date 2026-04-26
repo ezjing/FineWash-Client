@@ -37,7 +37,7 @@ class MyPageScreen extends StatelessWidget {
                         width: 64,
                         height: 64,
                         decoration: BoxDecoration(
-                          color: AppColors.orange.withOpacity(0.1),
+                          color: AppColors.orange.withAlpha((0.1 * 255).round()),
                           borderRadius: BorderRadius.circular(16),
                         ),
                         child: const Icon(
@@ -173,8 +173,9 @@ class MyPageScreen extends StatelessWidget {
                     await authService.logout();
                     vehicleService.clearVehicles();
                     reservationService.clearReservations();
-                    if (context.mounted)
+                    if (context.mounted) {
                       Navigator.popUntil(context, (route) => route.isFirst);
+                    }
                   }
                 },
                 child: const Row(
@@ -264,7 +265,7 @@ class _ReservationCard extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
-                  color: _getStatusColor().withOpacity(0.1),
+                  color: _getStatusColor().withAlpha((0.1 * 255).round()),
                   borderRadius: BorderRadius.circular(4),
                 ),
                 child: Text(

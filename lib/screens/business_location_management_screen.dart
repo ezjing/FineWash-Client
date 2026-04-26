@@ -36,9 +36,7 @@ class _BusinessLocationManagementScreenState
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text('사업장 삭제'),
-        content: Text(
-          '"$companyName" 사업장과 룸·세차 옵션 정보가 모두 삭제됩니다. 계속할까요?',
-        ),
+        content: Text('"$companyName" 사업장과 룸·세차 옵션 정보가 모두 삭제됩니다. 계속할까요?'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
@@ -55,23 +53,21 @@ class _BusinessLocationManagementScreenState
     if (ok != true || !mounted) return;
     try {
       final deleted = await context.read<BusinessService>().deleteBusiness(
-            busMstIdx: busMstIdx,
-          );
+        busMstIdx: busMstIdx,
+      );
       if (!mounted) return;
       if (deleted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('사업장이 삭제되었습니다')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('사업장이 삭제되었습니다')));
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('사업장 삭제에 실패했습니다')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('사업장 삭제에 실패했습니다')));
       }
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('$e')),
-      );
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('$e')));
     }
   }
 

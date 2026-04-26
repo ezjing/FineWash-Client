@@ -33,7 +33,7 @@ class ReservationConfirmationScreen extends StatelessWidget {
                   width: 80,
                   height: 80,
                   decoration: BoxDecoration(
-                    color: AppColors.success.withOpacity(0.1),
+                    color: AppColors.success.withAlpha((0.1 * 255).round()),
                     shape: BoxShape.circle,
                   ),
                   child: const Icon(
@@ -74,7 +74,7 @@ class ReservationConfirmationScreen extends StatelessWidget {
                       borderRadius: BorderRadius.circular(16),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withOpacity(0.05),
+                          color: Colors.black.withAlpha((0.05 * 255).round()),
                           blurRadius: 10,
                           offset: const Offset(0, 4),
                         ),
@@ -149,7 +149,7 @@ class ReservationConfirmationScreen extends StatelessWidget {
                   Container(
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
-                      color: AppColors.info.withOpacity(0.1),
+                      color: AppColors.info.withAlpha((0.1 * 255).round()),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: const Row(
@@ -183,7 +183,7 @@ class ReservationConfirmationScreen extends StatelessWidget {
               color: Colors.white,
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.05),
+                  color: Colors.black.withAlpha((0.05 * 255).round()),
                   blurRadius: 10,
                   offset: const Offset(0, -4),
                 ),
@@ -205,13 +205,11 @@ class _InfoRow extends StatelessWidget {
   final IconData icon;
   final String label;
   final String value;
-  final Color? valueColor;
 
   const _InfoRow({
     required this.icon,
     required this.label,
     required this.value,
-    this.valueColor,
   });
 
   @override
@@ -235,10 +233,10 @@ class _InfoRow extends StatelessWidget {
               const SizedBox(height: 4),
               Text(
                 value,
-                style: TextStyle(
+                style: const TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w500,
-                  color: valueColor ?? AppColors.textPrimary,
+                  color: AppColors.textPrimary,
                 ),
               ),
             ],

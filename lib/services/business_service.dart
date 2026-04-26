@@ -8,6 +8,9 @@ class BusinessService extends ChangeNotifier {
   final BusinessRepository _businessRepository = BusinessRepository();
 
   List<BusinessMasterModel> _businesses = [];
+  List<BusinessMasterModel> _nearbyBusinesses = [];
+  String? _nearbyErrorMessage;
+  bool _isNearbyLoading = false;
   BusinessMasterModel? _currentBusiness;
   BusinessDetailModel? _currentRoom;
   List<ReservationModel> _roomReservations = [];
@@ -15,6 +18,9 @@ class BusinessService extends ChangeNotifier {
   bool _isLoading = false;
 
   List<BusinessMasterModel> get businesses => _businesses;
+  List<BusinessMasterModel> get nearbyBusinesses => _nearbyBusinesses;
+  String? get nearbyErrorMessage => _nearbyErrorMessage;
+  bool get isNearbyLoading => _isNearbyLoading;
   BusinessMasterModel? get currentBusiness => _currentBusiness;
   BusinessDetailModel? get currentRoom => _currentRoom;
   List<ReservationModel> get roomReservations => _roomReservations;
@@ -43,6 +49,50 @@ class BusinessService extends ChangeNotifier {
       notifyListeners();
       return false;
     }
+  }
+
+  /// 좌표 기반 거리순 사업장 목록 조회 (SearchLogic2)
+  /// - 백엔드에서 거리계산/정렬을 수행하고 거리순 목록을 반환해야 함
+  /// - 응답 예: { success: true, businesses: [...] }
+  Future<bool> searchLogic2({
+    required double latitude,
+    required double longitude,
+  }) async {
+    _isNearbyLoading = true;
+    _nearbyErrorMessage = null;
+    notifyListeners();
+    try {
+      final response = await _businessRepository.searchLogic4(
+        latitude: latitude,
+        longitude: longitude,
+      );
+      if (response['success'] == true && response['businesses'] != null) {
+        _nearbyBusinesses = (response['businesses'] as List)
+            .map((json) => BusinessMasterModel.fromJson(json))
+            .toList();
+        _isNearbyLoading = false;
+        notifyListeners();
+        return true;
+      }
+      _nearbyBusinesses = [];
+      _nearbyErrorMessage = response['message']?.toString();
+      _isNearbyLoading = false;
+      notifyListeners();
+      return false;
+    } catch (e) {
+      _nearbyBusinesses = [];
+      _nearbyErrorMessage = e.toString();
+      _isNearbyLoading = false;
+      notifyListeners();
+      return false;
+    }
+  }
+
+  void clearNearbyBusinesses() {
+    _nearbyBusinesses = [];
+    _nearbyErrorMessage = null;
+    _isNearbyLoading = false;
+    notifyListeners();
   }
 
   /// 사업장 상세 조회 (BusinessMaster + BusinessDetail 목록)
@@ -75,6 +125,8 @@ class BusinessService extends ChangeNotifier {
     required String companyName,
     required String address,
     required String phone,
+    double? latitude,
+    double? longitude,
     String? email,
     String? businessType,
     String depositYn = 'N',
@@ -89,6 +141,8 @@ class BusinessService extends ChangeNotifier {
         'companyName': companyName.trim(),
         'address': address.trim(),
         'phone': phone.trim(),
+        if (latitude != null) 'latitude': latitude,
+        if (longitude != null) 'longitude': longitude,
         if (email != null) 'email': email.trim(),
         if (businessType != null) 'businessType': businessType,
         'depositYn': depositYn,

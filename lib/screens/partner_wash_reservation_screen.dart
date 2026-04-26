@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../models/address_result.dart';
+import '../models/business_detail_model.dart';
+import '../models/business_master_model.dart';
+import '../services/business_service.dart';
 import '../services/vehicle_service.dart';
 import '../services/reservation_service.dart';
 import '../services/payment_service.dart';
@@ -22,41 +25,13 @@ class _PartnerWashReservationScreenState
     extends State<PartnerWashReservationScreen> {
   int _currentStep = 1; // 현재 단계 (1-4)
   int? _selectedVehicleId;
-  String? _selectedLocationId;
+  int? _selectedBusDtlIdx;
   String? _selectedMidOption; // 중옵션: 'internal', 'external', 'both'
   String? _selectedSubOption; // 소옵션: 'basic', 'premium', 'full'
   DateTime? _selectedDate;
   String? _selectedTime;
   AddressResult? _currentLocation; // 현재 위치 (사용자 위치)
   final _currentLocationController = TextEditingController();
-
-  // 더미 세차장 데이터 (서버 API 연동 전 임시 사용)
-  List<Map<String, dynamic>> _dummyWashLocations = [
-    {
-      'id': '1',
-      'name': '클린세차장 강남점',
-      'address': '서울 강남구 테헤란로 123',
-      'distance': '1.2km',
-      'rating': 4.8,
-      'reviewCount': 245,
-    },
-    {
-      'id': '2',
-      'name': '프리미엄세차 역삼점',
-      'address': '서울 강남구 역삼동 456',
-      'distance': '2.5km',
-      'rating': 4.6,
-      'reviewCount': 189,
-    },
-    {
-      'id': '3',
-      'name': '스피드세차 선릉점',
-      'address': '서울 강남구 선릉로 789',
-      'distance': '3.1km',
-      'rating': 4.7,
-      'reviewCount': 312,
-    },
-  ];
 
   final List<String> _availableTimes = [
     '09:00',
@@ -94,7 +69,7 @@ class _PartnerWashReservationScreenState
   bool get _canProceedToNextStep {
     switch (_currentStep) {
       case 1:
-        return _currentLocation != null && _selectedLocationId != null;
+        return _currentLocation != null && _selectedBusDtlIdx != null;
       case 2:
         return _selectedVehicleId != null &&
             _selectedMidOption != null &&
@@ -145,29 +120,27 @@ class _PartnerWashReservationScreenState
       MaterialPageRoute(builder: (_) => const AddressSearchScreen()),
     );
     if (result != null) {
+      final businessService = Provider.of<BusinessService>(
+        context,
+        listen: false,
+      );
       setState(() {
         _currentLocation = result;
         _currentLocationController.text = result.fullAddress;
-        _sortLocationsByDistance();
+        _selectedBusDtlIdx = null;
       });
+      await businessService.searchLogic2(
+        latitude: result.latitude,
+        longitude: result.longitude,
+      );
     }
   }
 
-  // 위치 기반으로 세차장 목록을 거리순으로 정렬
-  void _sortLocationsByDistance() {
-    if (_currentLocation == null) return;
-
-    // TODO: 실제로는 서버에서 거리 계산된 데이터를 받아와야 함
-    // 현재는 더미 데이터의 distance 값을 기준으로 정렬
-    _dummyWashLocations.sort((a, b) {
-      final distanceA =
-          double.tryParse((a['distance'] as String).replaceAll('km', '')) ??
-          0.0;
-      final distanceB =
-          double.tryParse((b['distance'] as String).replaceAll('km', '')) ??
-          0.0;
-      return distanceA.compareTo(distanceB);
-    });
+  BusinessDetailModel? _getSelectableRoom(BusinessMasterModel business) {
+    if (business.businessDetails.isEmpty) return null;
+    final active = business.businessDetails.where((d) => d.isActive).toList();
+    if (active.isNotEmpty) return active.first;
+    return business.businessDetails.first;
   }
 
   Future<void> _selectDate() async {
@@ -183,7 +156,7 @@ class _PartnerWashReservationScreenState
   Future<void> _handleReservation() async {
     // 입력 검증
     if (_selectedVehicleId == null ||
-        _selectedLocationId == null ||
+        _selectedBusDtlIdx == null ||
         _selectedMidOption == null ||
         _selectedSubOption == null ||
         _selectedDate == null ||
@@ -298,7 +271,7 @@ class _PartnerWashReservationScreenState
             subOption: selectedSubOption['name'] as String,
             date: dateStr,
             time: _selectedTime!,
-            busDtlIdx: int.tryParse(_selectedLocationId ?? '0') ?? 0,
+            busDtlIdx: _selectedBusDtlIdx!,
             impUid: impUid,
             merchantUid: merchantUid,
             paymentAmount: _totalPrice,
@@ -450,6 +423,7 @@ class _PartnerWashReservationScreenState
   }
 
   Widget _buildStep1() {
+    final businessService = Provider.of<BusinessService>(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -538,99 +512,209 @@ class _PartnerWashReservationScreenState
             ),
           )
         else
-          ..._dummyWashLocations.asMap().entries.map((entry) {
-            final index = entry.key;
-            final location = entry.value;
-            final isLast = index == _dummyWashLocations.length - 1;
-            return Padding(
-              padding: EdgeInsets.only(bottom: isLast ? 0 : 12),
-              child: InkWell(
-                onTap: () =>
-                    setState(() => _selectedLocationId = location['id']),
-                child: Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: _selectedLocationId == location['id']
-                        ? AppColors.secondary.withOpacity(0.1)
-                        : Colors.white,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                      color: _selectedLocationId == location['id']
-                          ? AppColors.secondary
-                          : AppColors.border,
-                      width: _selectedLocationId == location['id'] ? 2 : 1,
-                    ),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        location['name'],
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                          color: _selectedLocationId == location['id']
-                              ? AppColors.secondary
-                              : AppColors.textPrimary,
+          ...[
+            if (businessService.isNearbyLoading)
+              const Padding(
+                padding: EdgeInsets.symmetric(vertical: 16),
+                child: Center(
+                  child: CircularProgressIndicator(color: AppColors.secondary),
+                ),
+              )
+            else if (businessService.nearbyErrorMessage != null)
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: AppColors.surfaceVariant,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Row(
+                      children: [
+                        Icon(
+                          Icons.error_outline,
+                          color: AppColors.textSecondary,
+                          size: 20,
                         ),
-                      ),
-                      const SizedBox(height: 8),
-                      Row(
-                        children: [
-                          const Icon(
-                            Icons.location_on_outlined,
-                            size: 16,
-                            color: AppColors.textSecondary,
-                          ),
-                          const SizedBox(width: 4),
-                          Expanded(
-                            child: Text(
-                              location['address'],
-                              style: const TextStyle(
-                                fontSize: 14,
-                                color: AppColors.textSecondary,
-                              ),
+                        SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            '가까운 세차장 목록을 불러오지 못했습니다',
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: AppColors.textSecondary,
                             ),
                           ),
-                        ],
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    OutlinedButton(
+                      onPressed: () async {
+                        final loc = _currentLocation;
+                        if (loc == null) return;
+                        await businessService.searchLogic2(
+                          latitude: loc.latitude,
+                          longitude: loc.longitude,
+                        );
+                      },
+                      style: OutlinedButton.styleFrom(
+                        side: const BorderSide(color: AppColors.border),
                       ),
-                      const SizedBox(height: 8),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      child: const Text('다시 시도'),
+                    ),
+                  ],
+                ),
+              )
+            else if (businessService.nearbyBusinesses.isEmpty)
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: AppColors.surfaceVariant,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Row(
+                  children: [
+                    Icon(
+                      Icons.info_outline,
+                      color: AppColors.textSecondary,
+                      size: 20,
+                    ),
+                    SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        '주변 제휴 세차장이 없습니다',
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: AppColors.textSecondary,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              )
+            else
+              ...businessService.nearbyBusinesses.asMap().entries.map((entry) {
+                final index = entry.key;
+                final business = entry.value;
+                final isLast =
+                    index == businessService.nearbyBusinesses.length - 1;
+                final room = _getSelectableRoom(business);
+                final busDtlIdx = room?.busDtlIdx;
+                final isSelectable = busDtlIdx != null;
+                final isSelected =
+                    isSelectable && _selectedBusDtlIdx == busDtlIdx;
+                final distanceText = business.distanceKm != null
+                    ? '${business.distanceKm!.toStringAsFixed(1)}km'
+                    : '-';
+                return Padding(
+                  padding: EdgeInsets.only(bottom: isLast ? 0 : 12),
+                  child: InkWell(
+                    onTap: isSelectable
+                        ? () => setState(() => _selectedBusDtlIdx = busDtlIdx)
+                        : null,
+                    child: Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: isSelected
+                            ? AppColors.secondary.withOpacity(0.1)
+                            : Colors.white,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: isSelected
+                              ? AppColors.secondary
+                              : AppColors.border,
+                          width: isSelected ? 2 : 1,
+                        ),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
+                          Text(
+                            business.companyName ?? '세차장',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                              color: isSelected
+                                  ? AppColors.secondary
+                                  : AppColors.textPrimary,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
                           Row(
                             children: [
                               const Icon(
-                                Icons.star,
+                                Icons.location_on_outlined,
                                 size: 16,
-                                color: AppColors.yellow,
+                                color: AppColors.textSecondary,
                               ),
                               const SizedBox(width: 4),
-                              Text(
-                                '${location['rating']} (${location['reviewCount']})',
-                                style: const TextStyle(
-                                  fontSize: 14,
-                                  color: AppColors.textSecondary,
+                              Expanded(
+                                child: Text(
+                                  business.address ?? '-',
+                                  style: const TextStyle(
+                                    fontSize: 14,
+                                    color: AppColors.textSecondary,
+                                  ),
                                 ),
                               ),
                             ],
                           ),
-                          Text(
-                            location['distance'],
-                            style: const TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w600,
-                              color: AppColors.secondary,
+                          if (room?.roomName != null) ...[
+                            const SizedBox(height: 6),
+                            Row(
+                              children: [
+                                const Icon(
+                                  Icons.meeting_room_outlined,
+                                  size: 16,
+                                  color: AppColors.textSecondary,
+                                ),
+                                const SizedBox(width: 4),
+                                Expanded(
+                                  child: Text(
+                                    room!.roomName!,
+                                    style: const TextStyle(
+                                      fontSize: 13,
+                                      color: AppColors.textSecondary,
+                                    ),
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                              ],
                             ),
+                          ],
+                          const SizedBox(height: 8),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              if (!isSelectable)
+                                const Text(
+                                  '예약 가능한 룸 정보가 없습니다',
+                                  style: TextStyle(
+                                    fontSize: 13,
+                                    color: AppColors.textSecondary,
+                                  ),
+                                )
+                              else
+                                const SizedBox.shrink(),
+                              Text(
+                                distanceText,
+                                style: const TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w600,
+                                  color: AppColors.secondary,
+                                ),
+                              ),
+                            ],
                           ),
                         ],
                       ),
-                    ],
+                    ),
                   ),
-                ),
-              ),
-            );
-          }),
+                );
+              }),
+          ],
       ],
     );
   }

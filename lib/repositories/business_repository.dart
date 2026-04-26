@@ -16,6 +16,17 @@ class BusinessRepository {
     return ApiClient.get('/businesses/$busMstIdx');
   }
 
+  // BusinessController.SearchLogic4: 좌표 기반 거리순 사업장 목록 조회
+  // 예: GET `/businesses/nearby?lat=...&lng=...`
+  Future<Map<String, dynamic>> searchLogic4({
+    required double latitude,
+    required double longitude,
+  }) {
+    final lat = Uri.encodeComponent(latitude.toString());
+    final lng = Uri.encodeComponent(longitude.toString());
+    return ApiClient.get('/businesses/nearby?lat=$lat&lng=$lng');
+  }
+
   // BusinessController.SaveLogic1: 사업장(MST) 등록
   Future<Map<String, dynamic>> saveLogic1(Map<String, dynamic> body) {
     return ApiClient.post('/businesses', body);

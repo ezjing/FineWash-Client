@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 import '../models/address_result.dart';
+import '../repositories/address_repository.dart';
 import '../utils/app_colors.dart';
 
 /// 다음 우편번호 서비스를 이용한 주소 검색 화면
@@ -15,6 +16,7 @@ class AddressSearchScreen extends StatefulWidget {
 class _AddressSearchScreenState extends State<AddressSearchScreen> {
   late final WebViewController _controller;
   bool _isLoading = true;
+  bool _isGeocoding = false;
 
   @override
   void initState() {
@@ -49,13 +51,39 @@ class _AddressSearchScreenState extends State<AddressSearchScreen> {
       ..loadHtmlString(_getHtmlContent(), baseUrl: 'https://t1.daumcdn.net');
   }
 
-  void _handleAddressSelected(String message) {
+  Future<void> _handleAddressSelected(String message) async {
     try {
       final data = jsonDecode(message) as Map<String, dynamic>;
       final result = AddressResult.fromJson(data);
-      Navigator.pop(context, result);
+
+      final query = result.fullAddress.trim();
+      if (query.isEmpty) return;
+
+      setState(() => _isGeocoding = true);
+      final repo = AddressRepository();
+      final coords = await repo.searchLogic1Geocode(query: query);
+      final lat = coords?['latitude'];
+      final lng = coords?['longitude'];
+      if (lat == null || lng == null) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('좌표 정보를 찾을 수 없습니다.')),
+          );
+        }
+        return;
+      }
+
+      if (!mounted) return;
+      Navigator.pop(context, result.copyWith(latitude: lat, longitude: lng));
     } catch (e) {
       debugPrint('주소 파싱 오류: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('주소 처리 중 오류가 발생했습니다: $e')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isGeocoding = false);
     }
   }
 
@@ -133,7 +161,7 @@ class _AddressSearchScreenState extends State<AddressSearchScreen> {
       body: Stack(
         children: [
           WebViewWidget(controller: _controller),
-          if (_isLoading)
+          if (_isLoading || _isGeocoding)
             const Center(
               child: CircularProgressIndicator(color: AppColors.primary),
             ),

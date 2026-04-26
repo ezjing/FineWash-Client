@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../services/business_service.dart';
+import 'address_search_screen.dart';
 
 class BusinessLocationRegisterScreen extends StatefulWidget {
   final int? locationId; // 수정 모드인 경우
@@ -27,6 +28,9 @@ class _BusinessLocationRegisterScreenState
   bool _depositYn = false;
   String? _businessType;
   bool _isLoading = false;
+  bool _isGeocoding = false;
+  double? _latitude;
+  double? _longitude;
 
   @override
   void initState() {
@@ -60,6 +64,8 @@ class _BusinessLocationRegisterScreenState
           : '';
       _remarkController.text = business.remark ?? '';
       _businessType = business.businessType;
+      _latitude = business.latitude;
+      _longitude = business.longitude;
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -76,6 +82,34 @@ class _BusinessLocationRegisterScreenState
     _depositAmountController.dispose();
     _remarkController.dispose();
     super.dispose();
+  }
+
+  Future<void> _openAddressSearch() async {
+    if (_isLoading) return;
+    final result = await Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => const AddressSearchScreen()),
+    );
+    if (!mounted || result == null) return;
+
+    final fullAddress = (result as dynamic).fullAddress as String?;
+    final lat = (result as dynamic).latitude as double?;
+    final lng = (result as dynamic).longitude as double?;
+    if (fullAddress == null || fullAddress.trim().isEmpty) return;
+    if (lat == null || lng == null) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('주소에서 위도/경도를 가져오지 못했습니다.')),
+        );
+      }
+      return;
+    }
+
+    setState(() {
+      _addressController.text = fullAddress.trim();
+      _latitude = lat;
+      _longitude = lng;
+    });
   }
 
   Future<void> _saveLocation() async {
@@ -110,6 +144,8 @@ class _BusinessLocationRegisterScreenState
         companyName: companyName,
         address: address,
         phone: phone,
+        latitude: _latitude,
+        longitude: _longitude,
         email: email,
         businessType: _businessType,
         depositYn: depositYn,
@@ -246,18 +282,43 @@ class _BusinessLocationRegisterScreenState
           const SizedBox(height: 16),
           TextFormField(
             controller: _addressController,
-            decoration: const InputDecoration(
+            readOnly: true,
+            onTap: _openAddressSearch,
+            decoration: InputDecoration(
               labelText: '주소',
-              hintText: '주소를 입력하세요',
-              prefixIcon: Icon(Icons.location_on),
+              hintText: '주소를 검색하세요',
+              prefixIcon: const Icon(Icons.location_on),
+              suffixIcon: _isGeocoding
+                  ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: Padding(
+                        padding: EdgeInsets.all(12),
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      ),
+                    )
+                  : const Icon(Icons.search),
             ),
             validator: (value) {
               if (value == null || value.isEmpty) {
                 return '주소를 입력해주세요';
               }
+              if (_isGeocoding) {
+                return '주소 좌표 확인 중입니다. 잠시만 기다려주세요';
+              }
+              if (_latitude == null || _longitude == null) {
+                return '주소 검색 후 선택해주세요 (위도/경도 필요)';
+              }
               return null;
             },
           ),
+          if (_latitude != null && _longitude != null) ...[
+            const SizedBox(height: 8),
+            Text(
+              '위도: ${_latitude!.toStringAsFixed(6)}, 경도: ${_longitude!.toStringAsFixed(6)}',
+              style: Theme.of(context).textTheme.bodySmall,
+            ),
+          ],
           const SizedBox(height: 16),
           TextFormField(
             controller: _addressDetailController,

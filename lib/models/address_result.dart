@@ -8,6 +8,8 @@ class AddressResult {
   final String sigungu; // 시/군/구
   final String bname; // 법정동/법정리
   final String roadAddress; // 전체 도로명 주소
+  final double latitude; // 위도
+  final double longitude; // 경도
 
   AddressResult({
     required this.address,
@@ -18,6 +20,8 @@ class AddressResult {
     required this.sigungu,
     required this.bname,
     required this.roadAddress,
+    required this.latitude,
+    required this.longitude,
   });
 
   factory AddressResult.fromJson(Map<String, dynamic> json) {
@@ -30,7 +34,33 @@ class AddressResult {
       sigungu: json['sigungu'] ?? '',
       bname: json['bname'] ?? '',
       roadAddress: json['roadAddress'] ?? '',
+      latitude: _toDouble(json['latitude']) ?? 0.0,
+      longitude: _toDouble(json['longitude']) ?? 0.0,
     );
+  }
+
+  AddressResult copyWith({
+    double? latitude,
+    double? longitude,
+  }) {
+    return AddressResult(
+      address: address,
+      jibunAddress: jibunAddress,
+      zonecode: zonecode,
+      buildingName: buildingName,
+      sido: sido,
+      sigungu: sigungu,
+      bname: bname,
+      roadAddress: roadAddress,
+      latitude: latitude ?? this.latitude,
+      longitude: longitude ?? this.longitude,
+    );
+  }
+
+  static double? _toDouble(dynamic v) {
+    if (v == null) return null;
+    if (v is num) return v.toDouble();
+    return double.tryParse('$v');
   }
 
   /// 전체 주소 문자열 반환

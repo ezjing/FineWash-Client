@@ -9,6 +9,9 @@ class BusinessMasterModel {
   final String? phone;
   final String? email;
   final String? address;
+  final double? latitude;
+  final double? longitude;
+  final double? distanceKm; // 주소 기반 거리순 조회 시 포함될 수 있음
   final String? businessType;
   final String? depositYn;
   final int? depositAmount;
@@ -25,6 +28,9 @@ class BusinessMasterModel {
     this.phone,
     this.email,
     this.address,
+    this.latitude,
+    this.longitude,
+    this.distanceKm,
     this.businessType,
     this.depositYn,
     this.depositAmount,
@@ -46,6 +52,9 @@ class BusinessMasterModel {
       phone: json['phone'],
       email: json['email'],
       address: json['address'],
+      latitude: _double(json['latitude'] ?? json['lat']),
+      longitude: _double(json['longitude'] ?? json['lng']),
+      distanceKm: _double(json['distanceKm'] ?? json['distance_km']),
       businessType: json['businessType'],
       depositYn: json['depositYn'],
       depositAmount: json['depositAmount'],
@@ -63,6 +72,12 @@ class BusinessMasterModel {
     );
   }
 
+  static double? _double(dynamic v) {
+    if (v == null) return null;
+    if (v is num) return v.toDouble();
+    return double.tryParse('$v');
+  }
+
   Map<String, dynamic> toJson() {
     return {
       'busMstIdx': busMstIdx,
@@ -72,6 +87,9 @@ class BusinessMasterModel {
       'phone': phone,
       'email': email,
       'address': address,
+      'latitude': latitude,
+      'longitude': longitude,
+      'distanceKm': distanceKm,
       'businessType': businessType,
       'depositYn': depositYn,
       'depositAmount': depositAmount,

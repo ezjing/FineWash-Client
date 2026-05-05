@@ -43,6 +43,32 @@ class WashOptionService extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// SearchLogic2 — (공개) 제휴 세차장 MST(+DTL) 목록
+  Future<void> searchLogic2(int busMstIdx, {bool showLoading = true}) async {
+    if (showLoading) {
+      _isLoading = true;
+      notifyListeners();
+    }
+    try {
+      final response = await _repository.searchLogic2(busMstIdx: busMstIdx);
+      if (response['success'] == true && response['rows'] != null) {
+        _masters = (response['rows'] as List)
+            .map(
+              (e) => WashOptionMasterModel.fromJson(e as Map<String, dynamic>),
+            )
+            .toList();
+      } else {
+        _masters = [];
+      }
+    } catch (e) {
+      _masters = [];
+    }
+    if (showLoading) {
+      _isLoading = false;
+    }
+    notifyListeners();
+  }
+
   Future<void> reload(int busMstIdx) =>
       searchLogic1(busMstIdx, showLoading: false);
 

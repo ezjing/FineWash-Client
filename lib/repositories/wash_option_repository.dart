@@ -7,6 +7,11 @@ class WashOptionRepository {
     return ApiClient.get('/wash-options/masters?busMstIdx=$busMstIdx');
   }
 
+  /// GET `/wash-options/masters/public?busMstIdx=`
+  Future<Map<String, dynamic>> searchLogic2({required int busMstIdx}) {
+    return ApiClient.get('/wash-options/masters/public?busMstIdx=$busMstIdx');
+  }
+
   /// POST `/wash-options/masters`
   Future<Map<String, dynamic>> saveLogic1(Map<String, dynamic> body) {
     return ApiClient.post('/wash-options/masters', body);

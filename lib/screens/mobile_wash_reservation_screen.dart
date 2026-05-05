@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../models/service_type_model.dart';
 import '../models/address_result.dart';
+import '../services/business_service.dart';
 import '../services/vehicle_service.dart';
 import '../services/reservation_service.dart';
 import '../services/payment_service.dart';
 import '../services/auth_service.dart';
+import '../services/wash_option_service.dart';
 import '../utils/app_colors.dart';
-import '../utils/currency_formatter.dart';
 import 'vehicle_registration_screen.dart';
 import 'reservation_confirmation_screen.dart';
 import 'address_search_screen.dart';
@@ -22,13 +22,20 @@ class MobileWashReservationScreen extends StatefulWidget {
 
 class _MobileWashReservationScreenState
     extends State<MobileWashReservationScreen> {
+  int _currentStep = 1;
   int? _selectedVehicleId;
-  String _selectedServiceId = 'basic';
+  int? _selectedBusMstIdx;
+  int? _selectedWoptMstIdx;
+  int? _selectedWoptDtlIdx;
+  String? _selectedMidOptionName;
+  String? _selectedSubOptionName;
+  int _selectedPrice = 0;
   DateTime? _selectedDate;
   String? _selectedTime;
-  final _addressController = TextEditingController();
+  AddressResult? _currentLocation;
+  final _currentLocationController = TextEditingController();
   final _detailAddressController = TextEditingController();
-  AddressResult? _selectedAddress;
+
   final List<String> _availableTimes = [
     '09:00',
     '10:00',
@@ -40,10 +47,40 @@ class _MobileWashReservationScreenState
     '17:00',
   ];
 
+  int get _totalPrice => _selectedPrice;
+
+  bool get _canProceedToNextStep {
+    switch (_currentStep) {
+      case 1:
+        return _currentLocation != null && _selectedBusMstIdx != null;
+      case 2:
+        return _selectedVehicleId != null &&
+            _selectedWoptMstIdx != null &&
+            _selectedWoptDtlIdx != null;
+      case 3:
+        return _selectedDate != null && _selectedTime != null;
+      case 4:
+        return false;
+      default:
+        return false;
+    }
+  }
+
+  void _nextStep() {
+    if (_canProceedToNextStep && _currentStep < 4) {
+      setState(() => _currentStep++);
+    }
+  }
+
+  void _previousStep() {
+    if (_currentStep > 1) {
+      setState(() => _currentStep--);
+    }
+  }
+
   @override
   void initState() {
     super.initState();
-    // 화면 진입 시 차량 목록 조회
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final vehicleService = Provider.of<VehicleService>(
         context,
@@ -55,21 +92,41 @@ class _MobileWashReservationScreenState
 
   @override
   void dispose() {
-    _addressController.dispose();
+    _currentLocationController.dispose();
     _detailAddressController.dispose();
     super.dispose();
   }
 
-  Future<void> _searchAddress() async {
+  Future<void> _searchCurrentLocation() async {
     final result = await Navigator.push<AddressResult>(
       context,
       MaterialPageRoute(builder: (_) => const AddressSearchScreen()),
     );
+    if (!mounted) return;
     if (result != null) {
+      final businessService = Provider.of<BusinessService>(
+        context,
+        listen: false,
+      );
+      final washOptionService = Provider.of<WashOptionService>(
+        context,
+        listen: false,
+      );
       setState(() {
-        _selectedAddress = result;
-        _addressController.text = result.fullAddress;
+        _currentLocation = result;
+        _currentLocationController.text = result.fullAddress;
+        _selectedBusMstIdx = null;
+        _selectedWoptMstIdx = null;
+        _selectedWoptDtlIdx = null;
+        _selectedMidOptionName = null;
+        _selectedSubOptionName = null;
+        _selectedPrice = 0;
       });
+      washOptionService.clear();
+      await businessService.searchLogic2(
+        latitude: result.latitude,
+        longitude: result.longitude,
+      );
     }
   }
 
@@ -84,11 +141,13 @@ class _MobileWashReservationScreenState
   }
 
   Future<void> _handleReservation() async {
-    // 입력 검증
     if (_selectedVehicleId == null ||
+        _selectedBusMstIdx == null ||
+        _selectedWoptMstIdx == null ||
+        _selectedWoptDtlIdx == null ||
         _selectedDate == null ||
         _selectedTime == null ||
-        _selectedAddress == null) {
+        _currentLocation == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('모든 정보를 입력해주세요.'),
@@ -98,9 +157,8 @@ class _MobileWashReservationScreenState
       return;
     }
 
-    final selectedService = mobileWashServices.firstWhere(
-      (s) => s.id == _selectedServiceId,
-    );
+    final selectedMidName = _selectedMidOptionName ?? '-';
+    final selectedSubName = _selectedSubOptionName ?? '-';
     final authService = Provider.of<AuthService>(context, listen: false);
     final reservationService = Provider.of<ReservationService>(
       context,
@@ -108,7 +166,6 @@ class _MobileWashReservationScreenState
     );
     final vehicleService = Provider.of<VehicleService>(context, listen: false);
 
-    // 사용자 정보 가져오기
     final user = authService.currentUser;
     if (user == null) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -120,22 +177,18 @@ class _MobileWashReservationScreenState
       return;
     }
 
-    // 주문 고유번호 생성
     final merchantUid = PaymentService.generateMerchantUid();
 
-    // 결제 요청
     await PaymentService.requestPayment(
       context: context,
-      amount: selectedService.price,
+      amount: _totalPrice,
       merchantUid: merchantUid,
-      name: '${selectedService.name} - 출장 세차',
+      name: '$selectedMidName $selectedSubName - 출장 세차',
       buyerName: user.name ?? '고객',
       buyerTel: user.phone ?? '010-0000-0000',
       buyerEmail: user.email ?? 'customer@example.com',
       callback: (result) async {
-        // 결제 결과 처리
         if (PaymentService.verifyPaymentResult(result)) {
-          // 백엔드 서버에 결제 검증 요청
           final impUid = result['imp_uid'] as String?;
           if (impUid == null) {
             if (mounted) {
@@ -149,7 +202,6 @@ class _MobileWashReservationScreenState
             return;
           }
 
-          // 로딩 표시
           if (mounted) {
             showDialog(
               context: context,
@@ -159,14 +211,12 @@ class _MobileWashReservationScreenState
             );
           }
 
-          // 백엔드 결제 검증
           final isVerified = await PaymentService.verifyPaymentWithBackend(
             impUid: impUid,
             merchantUid: merchantUid,
-            amount: selectedService.price,
+            amount: _totalPrice,
           );
 
-          // 로딩 닫기
           if (mounted) {
             Navigator.pop(context);
           }
@@ -184,24 +234,23 @@ class _MobileWashReservationScreenState
             return;
           }
 
-          // 결제 검증 성공 - 예약 저장
           final fullAddress = _detailAddressController.text.isNotEmpty
-              ? '${_selectedAddress!.fullAddress} ${_detailAddressController.text}'
-              : _selectedAddress!.fullAddress;
+              ? '${_currentLocation!.fullAddress} ${_detailAddressController.text}'
+              : _currentLocation!.fullAddress;
           final dateStr =
               '${_selectedDate!.year}-${_selectedDate!.month.toString().padLeft(2, '0')}-${_selectedDate!.day.toString().padLeft(2, '0')}';
 
           final success = await reservationService.saveLogic1(
             vehicleId: _selectedVehicleId!,
             mainOption: '출장',
-            midOption: selectedService.name,
-            subOption: selectedService.description,
+            midOption: selectedMidName,
+            subOption: selectedSubName,
             date: dateStr,
             time: _selectedTime!,
             vehicleLocation: fullAddress,
             impUid: impUid,
             merchantUid: merchantUid,
-            paymentAmount: selectedService.price,
+            paymentAmount: _totalPrice,
           );
 
           if (success && mounted) {
@@ -224,7 +273,6 @@ class _MobileWashReservationScreenState
             );
           }
         } else {
-          // 결제 실패
           if (mounted) {
             final errorMsg =
                 result['error_msg'] ?? result['message'] ?? '결제에 실패했습니다.';
@@ -241,374 +289,1206 @@ class _MobileWashReservationScreenState
     );
   }
 
-  @override
-  Widget build(BuildContext context) {
-    final vehicleService = Provider.of<VehicleService>(context);
-    final vehicles = vehicleService.vehicles;
-    final mediaQuery = MediaQuery.of(context);
-    final bottomPadding = mediaQuery.padding.bottom;
+  // ───────────────────────────────────────────────────────────
+  //  단계 인디케이터
+  // ───────────────────────────────────────────────────────────
+  Widget _buildStepIndicator() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        border: Border(bottom: BorderSide(color: AppColors.border, width: 1)),
+      ),
+      child: Row(
+        children: List.generate(4, (index) {
+          final step = index + 1;
+          final isActive = step == _currentStep;
+          final isCompleted = step < _currentStep;
 
-    return Scaffold(
-      appBar: AppBar(title: const Text('출장 세차 예약')),
-      body: SingleChildScrollView(
-        padding: EdgeInsets.only(
-          left: 24,
-          right: 24,
-          top: 24,
-          bottom: bottomPadding + 24,
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              '차량 선택',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-                color: AppColors.textPrimary,
-              ),
-            ),
-            const SizedBox(height: 12),
-            if (vehicles.isEmpty)
-              InkWell(
-                onTap: () async {
-                  final result = await Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => const VehicleRegistrationScreen(),
-                    ),
-                  );
-                  if (!context.mounted) return;
-                  if (result == true) {
-                    // 차량 등록 후 목록 새로고침
-                    final vehicleService = Provider.of<VehicleService>(
-                      context,
-                      listen: false,
-                    );
-                    await vehicleService.searchLogic1();
-                    setState(() {});
-                  }
-                },
-                child: Container(
-                  padding: const EdgeInsets.all(20),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: AppColors.border),
-                  ),
-                  child: const Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
+          return Expanded(
+            child: Row(
+              children: [
+                Expanded(
+                  child: Column(
                     children: [
-                      Icon(Icons.add, color: AppColors.primary),
-                      SizedBox(width: 8),
+                      Container(
+                        width: 32,
+                        height: 32,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: isActive || isCompleted
+                              ? AppColors.primary
+                              : AppColors.border,
+                        ),
+                        child: Center(
+                          child: isCompleted
+                              ? const Icon(
+                                  Icons.check,
+                                  color: Colors.white,
+                                  size: 20,
+                                )
+                              : Text(
+                                  '$step',
+                                  style: TextStyle(
+                                    color: isActive || isCompleted
+                                        ? Colors.white
+                                        : AppColors.textSecondary,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                        ),
+                      ),
+                      const SizedBox(height: 4),
                       Text(
-                        '차량 정보 등록하기',
+                        _getStepTitle(step),
                         style: TextStyle(
-                          color: AppColors.primary,
-                          fontWeight: FontWeight.w600,
+                          fontSize: 11,
+                          color: isActive || isCompleted
+                              ? AppColors.primary
+                              : AppColors.textSecondary,
+                          fontWeight: isActive
+                              ? FontWeight.w600
+                              : FontWeight.normal,
                         ),
+                        textAlign: TextAlign.center,
                       ),
                     ],
                   ),
                 ),
-              )
-            else
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: AppColors.border),
-                ),
-                child: DropdownButtonHideUnderline(
-                  child: DropdownButton<int>(
-                    value: _selectedVehicleId,
-                    hint: const Text('차량을 선택하세요'),
-                    isExpanded: true,
-                    items: [
-                      ...vehicles.map(
-                        (v) => DropdownMenuItem<int>(
-                          value: v.vehIdx,
-                          child: Text(v.displayName),
-                        ),
-                      ),
-                      const DropdownMenuItem<int>(
-                        value: -1,
-                        child: Row(
-                          children: [
-                            Icon(Icons.add, color: AppColors.primary, size: 20),
-                            SizedBox(width: 8),
-                            Text(
-                              '신규 차량 등록',
-                              style: TextStyle(
-                                color: AppColors.primary,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                    onChanged: (value) async {
-                      if (value == -1) {
-                        // 신규 차량 등록 화면으로 이동
-                        final result = await Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => const VehicleRegistrationScreen(),
-                          ),
-                        );
-                        if (!context.mounted) return;
-                        if (result == true) {
-                          // 차량 등록 후 목록 새로고침
-                          final vehicleService = Provider.of<VehicleService>(
-                            context,
-                            listen: false,
-                          );
-                          await vehicleService.searchLogic1();
-                          // 새로 등록한 차량을 자동으로 선택
-                          if (vehicleService.vehicles.isNotEmpty) {
-                            setState(() {
-                              _selectedVehicleId =
-                                  vehicleService.vehicles.last.vehIdx;
-                            });
-                          }
-                        }
-                      } else {
-                        setState(() => _selectedVehicleId = value);
-                      }
-                    },
+                if (step < 4)
+                  Container(
+                    width: 20,
+                    height: 2,
+                    margin: const EdgeInsets.only(bottom: 16),
+                    color: isCompleted ? AppColors.primary : AppColors.border,
                   ),
-                ),
-              ),
-            const SizedBox(height: 24),
-            const Text(
-              '세차 종류',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-                color: AppColors.textPrimary,
-              ),
+              ],
             ),
-            const SizedBox(height: 12),
-            ...mobileWashServices.map(
-              (service) => Padding(
-                padding: const EdgeInsets.only(bottom: 12),
-                child: InkWell(
-                  onTap: () => setState(() => _selectedServiceId = service.id),
-                  child: Container(
+          );
+        }),
+      ),
+    );
+  }
+
+  String _getStepTitle(int step) {
+    switch (step) {
+      case 1:
+        return '위치/업자\n선택';
+      case 2:
+        return '차량/옵션\n선택';
+      case 3:
+        return '날짜/시간\n선택';
+      case 4:
+        return '결제\n완료';
+      default:
+        return '';
+    }
+  }
+
+  Widget _buildStepContent() {
+    switch (_currentStep) {
+      case 1:
+        return _buildStep1();
+      case 2:
+        return _buildStep2();
+      case 3:
+        return _buildStep3();
+      case 4:
+        return _buildStep4();
+      default:
+        return const SizedBox();
+    }
+  }
+
+  // ───────────────────────────────────────────────────────────
+  //  Step 1 : 세차 위치 + 출장세차 업자 선택
+  // ───────────────────────────────────────────────────────────
+  Widget _buildStep1() {
+    final businessService = Provider.of<BusinessService>(context);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          '세차 위치',
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w600,
+            color: AppColors.textPrimary,
+          ),
+        ),
+        const SizedBox(height: 12),
+        InkWell(
+          onTap: _searchCurrentLocation,
+          child: Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: AppColors.border),
+            ),
+            child: Row(
+              children: [
+                const Icon(
+                  Icons.location_on_outlined,
+                  color: AppColors.textSecondary,
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    _currentLocation != null
+                        ? _currentLocation!.fullAddress
+                        : '세차 위치를 검색하세요',
+                    style: TextStyle(
+                      color: _currentLocation != null
+                          ? AppColors.textPrimary
+                          : AppColors.textSecondary,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                const Icon(
+                  Icons.search,
+                  color: AppColors.textSecondary,
+                  size: 20,
+                ),
+              ],
+            ),
+          ),
+        ),
+        if (_currentLocation != null) ...[
+          const SizedBox(height: 8),
+          Text(
+            '우편번호: ${_currentLocation!.zonecode}',
+            style: const TextStyle(
+              fontSize: 12,
+              color: AppColors.textSecondary,
+            ),
+          ),
+          const SizedBox(height: 12),
+          TextFormField(
+            controller: _detailAddressController,
+            decoration: const InputDecoration(
+              hintText: '상세 주소를 입력하세요 (동/호수 등)',
+              filled: true,
+              fillColor: Colors.white,
+            ),
+          ),
+        ],
+        const SizedBox(height: 24),
+        const Text(
+          '출장세차 업자 선택',
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w600,
+            color: AppColors.textPrimary,
+          ),
+        ),
+        const SizedBox(height: 12),
+        if (_currentLocation == null)
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: AppColors.surfaceVariant,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: const Row(
+              children: [
+                Icon(
+                  Icons.info_outline,
+                  color: AppColors.textSecondary,
+                  size: 20,
+                ),
+                SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    '위치를 입력하면 가까운 출장세차 업자를 찾아드립니다',
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: AppColors.textSecondary,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          )
+        else ...[
+          if (businessService.isNearbyLoading)
+            const Padding(
+              padding: EdgeInsets.symmetric(vertical: 16),
+              child: Center(
+                child: CircularProgressIndicator(color: AppColors.primary),
+              ),
+            )
+          else if (businessService.nearbyErrorMessage != null)
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: AppColors.surfaceVariant,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Row(
+                    children: [
+                      Icon(
+                        Icons.error_outline,
+                        color: AppColors.textSecondary,
+                        size: 20,
+                      ),
+                      SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          '가까운 출장세차 업자 목록을 불러오지 못했습니다',
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: AppColors.textSecondary,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  OutlinedButton(
+                    onPressed: () async {
+                      final loc = _currentLocation;
+                      if (loc == null) return;
+                      await businessService.searchLogic2(
+                        latitude: loc.latitude,
+                        longitude: loc.longitude,
+                      );
+                    },
+                    style: OutlinedButton.styleFrom(
+                      side: const BorderSide(color: AppColors.border),
+                    ),
+                    child: const Text('다시 시도'),
+                  ),
+                ],
+              ),
+            )
+          else
+            Builder(
+              builder: (context) {
+                final allNearby = businessService.nearbyBusinesses;
+                final providers = allNearby
+                    .where((b) => b.businessType == 'OUT')
+                    .toList();
+
+                if (providers.isEmpty) {
+                  return Container(
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
-                      color: _selectedServiceId == service.id
-                          ? AppColors.primary.withAlpha((0.1 * 255).round())
-                          : Colors.white,
+                      color: AppColors.surfaceVariant,
                       borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
-                        color: _selectedServiceId == service.id
-                            ? AppColors.primary
-                            : AppColors.border,
-                        width: _selectedServiceId == service.id ? 2 : 1,
-                      ),
                     ),
                     child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              service.name,
-                              style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w600,
-                                color: _selectedServiceId == service.id
-                                    ? AppColors.primary
-                                    : AppColors.textPrimary,
-                              ),
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              service.description,
-                              style: const TextStyle(
-                                fontSize: 14,
-                                color: AppColors.textSecondary,
-                              ),
-                            ),
-                          ],
+                        const Icon(
+                          Icons.info_outline,
+                          color: AppColors.textSecondary,
+                          size: 20,
                         ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            allNearby.isEmpty
+                                ? '주변 출장세차 업자가 없습니다'
+                                : '조회된 사업장(${allNearby.length}개) 중 출장세차(OUT) 업자가 없습니다',
+                            style: const TextStyle(
+                              fontSize: 14,
+                              color: AppColors.textSecondary,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                }
+
+                return Column(
+                  children: providers.asMap().entries.map((entry) {
+                    final index = entry.key;
+                    final p = entry.value;
+                    final isLast = index == providers.length - 1;
+                    final isSelected = _selectedBusMstIdx == p.busMstIdx;
+                    final distanceText = p.distanceKm != null
+                        ? '${p.distanceKm!.toStringAsFixed(1)}km'
+                        : '-';
+
+                    return Padding(
+                      padding: EdgeInsets.only(bottom: isLast ? 0 : 12),
+                      child: InkWell(
+                        onTap: () async {
+                          final washOptionService = context
+                              .read<WashOptionService>();
+                          setState(() {
+                            _selectedBusMstIdx = p.busMstIdx;
+                            _selectedWoptMstIdx = null;
+                            _selectedWoptDtlIdx = null;
+                            _selectedMidOptionName = null;
+                            _selectedSubOptionName = null;
+                            _selectedPrice = 0;
+                          });
+                          washOptionService.clear();
+                          await washOptionService.searchLogic2(p.busMstIdx);
+                        },
+                        child: Container(
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            color: isSelected
+                                ? AppColors.primary.withAlpha(
+                                    (0.1 * 255).round(),
+                                  )
+                                : Colors.white,
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: isSelected
+                                  ? AppColors.primary
+                                  : AppColors.border,
+                              width: isSelected ? 2 : 1,
+                            ),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                p.companyName ?? '출장세차 업자',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w600,
+                                  color: isSelected
+                                      ? AppColors.primary
+                                      : AppColors.textPrimary,
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              Row(
+                                children: [
+                                  const Icon(
+                                    Icons.location_on_outlined,
+                                    size: 16,
+                                    color: AppColors.textSecondary,
+                                  ),
+                                  const SizedBox(width: 4),
+                                  Expanded(
+                                    child: Text(
+                                      p.address ?? '-',
+                                      style: const TextStyle(
+                                        fontSize: 14,
+                                        color: AppColors.textSecondary,
+                                      ),
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 8),
+                              Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
+                                children: [
+                                  const SizedBox.shrink(),
+                                  Text(
+                                    distanceText,
+                                    style: const TextStyle(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w600,
+                                      color: AppColors.primary,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    );
+                  }).toList(),
+                );
+              },
+            ),
+        ],
+      ],
+    );
+  }
+
+  // ───────────────────────────────────────────────────────────
+  //  Step 2 : 차량 선택 + 중옵션 / 소옵션 선택
+  // ───────────────────────────────────────────────────────────
+  Widget _buildStep2() {
+    final vehicleService = Provider.of<VehicleService>(context);
+    final vehicles = vehicleService.vehicles;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          '차량 선택',
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w600,
+            color: AppColors.textPrimary,
+          ),
+        ),
+        const SizedBox(height: 12),
+        if (vehicles.isEmpty)
+          InkWell(
+            onTap: () async {
+              final result = await Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => const VehicleRegistrationScreen(),
+                ),
+              );
+              if (result == true) {
+                await vehicleService.searchLogic1();
+                setState(() {});
+              }
+            },
+            child: Container(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: AppColors.border),
+              ),
+              child: const Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.add, color: AppColors.primary),
+                  SizedBox(width: 8),
+                  Text(
+                    '차량 정보 등록하기',
+                    style: TextStyle(
+                      color: AppColors.primary,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          )
+        else
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: AppColors.border),
+            ),
+            child: DropdownButtonHideUnderline(
+              child: DropdownButton<int>(
+                value: _selectedVehicleId,
+                hint: const Text('차량을 선택하세요'),
+                isExpanded: true,
+                items: [
+                  ...vehicles.map(
+                    (v) => DropdownMenuItem<int>(
+                      value: v.vehIdx,
+                      child: Text(v.displayName),
+                    ),
+                  ),
+                  const DropdownMenuItem<int>(
+                    value: -1,
+                    child: Row(
+                      children: [
+                        Icon(Icons.add, color: AppColors.primary, size: 20),
+                        SizedBox(width: 8),
                         Text(
-                          formatWonWithSuffix(service.price),
+                          '신규 차량 등록',
                           style: TextStyle(
-                            fontSize: 16,
+                            color: AppColors.primary,
                             fontWeight: FontWeight.w600,
-                            color: _selectedServiceId == service.id
-                                ? AppColors.primary
-                                : AppColors.textPrimary,
                           ),
                         ),
                       ],
                     ),
                   ),
-                ),
+                ],
+                onChanged: (value) async {
+                  if (value == -1) {
+                    final result = await Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const VehicleRegistrationScreen(),
+                      ),
+                    );
+                    if (!mounted) return;
+                    if (result == true) {
+                      final vehicleService = Provider.of<VehicleService>(
+                        context,
+                        listen: false,
+                      );
+                      await vehicleService.searchLogic1();
+                      if (vehicleService.vehicles.isNotEmpty) {
+                        setState(() {
+                          _selectedVehicleId =
+                              vehicleService.vehicles.last.vehIdx;
+                        });
+                      }
+                    }
+                  } else {
+                    setState(() => _selectedVehicleId = value);
+                  }
+                },
               ),
             ),
-            const SizedBox(height: 24),
-            const Text(
-              '세차 주소',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-                color: AppColors.textPrimary,
-              ),
-            ),
-            const SizedBox(height: 12),
-            InkWell(
-              onTap: _searchAddress,
-              child: Container(
+          ),
+        const SizedBox(height: 24),
+        const Text(
+          '중옵션 선택',
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w600,
+            color: AppColors.textPrimary,
+          ),
+        ),
+        const SizedBox(height: 12),
+        Consumer<WashOptionService>(
+          builder: (context, washOptionService, child) {
+            final masters = washOptionService.masters;
+            if (_selectedBusMstIdx == null) {
+              return Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: AppColors.surfaceVariant,
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: AppColors.border),
                 ),
-                child: Row(
+                child: const Row(
                   children: [
-                    const Icon(
-                      Icons.location_on_outlined,
-                      color: AppColors.textSecondary,
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Text(
-                        _selectedAddress != null
-                            ? _selectedAddress!.fullAddress
-                            : '주소를 검색하세요',
-                        style: TextStyle(
-                          color: _selectedAddress != null
-                              ? AppColors.textPrimary
-                              : AppColors.textSecondary,
-                        ),
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                    const Icon(
-                      Icons.search,
+                    Icon(
+                      Icons.info_outline,
                       color: AppColors.textSecondary,
                       size: 20,
                     ),
+                    SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        '먼저 출장세차 업자를 선택해주세요',
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: AppColors.textSecondary,
+                        ),
+                      ),
+                    ),
                   ],
                 ),
-              ),
-            ),
-            if (_selectedAddress != null) ...[
-              const SizedBox(height: 8),
-              Text(
-                '우편번호: ${_selectedAddress!.zonecode}',
-                style: const TextStyle(
-                  fontSize: 12,
-                  color: AppColors.textSecondary,
+              );
+            }
+            if (washOptionService.isLoading) {
+              return const Padding(
+                padding: EdgeInsets.symmetric(vertical: 12),
+                child: Center(
+                  child: CircularProgressIndicator(color: AppColors.primary),
                 ),
-              ),
-              const SizedBox(height: 12),
-              TextFormField(
-                controller: _detailAddressController,
-                decoration: const InputDecoration(
-                  hintText: '상세 주소를 입력하세요 (동/호수 등)',
-                  filled: true,
-                  fillColor: Colors.white,
-                ),
-              ),
-            ],
-            const SizedBox(height: 24),
-            const Text(
-              '날짜',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-                color: AppColors.textPrimary,
-              ),
-            ),
-            const SizedBox(height: 12),
-            InkWell(
-              onTap: _selectDate,
-              child: Container(
+              );
+            }
+            if (masters.isEmpty) {
+              return Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: AppColors.surfaceVariant,
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: AppColors.border),
                 ),
-                child: Row(
+                child: const Row(
                   children: [
-                    const Icon(
-                      Icons.calendar_today_outlined,
+                    Icon(
+                      Icons.info_outline,
                       color: AppColors.textSecondary,
+                      size: 20,
                     ),
-                    const SizedBox(width: 12),
-                    Text(
-                      _selectedDate != null
-                          ? '${_selectedDate!.year}년 ${_selectedDate!.month}월 ${_selectedDate!.day}일'
-                          : '날짜를 선택하세요',
-                      style: TextStyle(
-                        color: _selectedDate != null
-                            ? AppColors.textPrimary
-                            : AppColors.textSecondary,
+                    SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        '해당 업자에 등록된 세차 옵션이 없습니다',
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: AppColors.textSecondary,
+                        ),
                       ),
                     ),
                   ],
                 ),
-              ),
-            ),
-            const SizedBox(height: 24),
-            const Text(
-              '시간',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-                color: AppColors.textPrimary,
-              ),
-            ),
-            const SizedBox(height: 12),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: _availableTimes
+              );
+            }
+            return Wrap(
+              spacing: 12,
+              runSpacing: 12,
+              children: masters
                   .map(
-                    (time) => ChoiceChip(
-                      label: Text(time),
-                      selected: _selectedTime == time,
-                      onSelected: (selected) => setState(
-                        () => _selectedTime = selected ? time : null,
-                      ),
-                      selectedColor: AppColors.primary.withAlpha((0.2 * 255).round()),
-                      labelStyle: TextStyle(
-                        color: _selectedTime == time
-                            ? AppColors.primary
-                            : AppColors.textSecondary,
-                        fontWeight: _selectedTime == time
-                            ? FontWeight.w600
-                            : FontWeight.normal,
+                    (m) => InkWell(
+                      onTap: () => setState(() {
+                        _selectedWoptMstIdx = m.woptMstIdx;
+                        _selectedWoptDtlIdx = null;
+                        _selectedMidOptionName = m.optionName;
+                        _selectedSubOptionName = null;
+                        _selectedPrice = 0;
+                      }),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 20,
+                          vertical: 16,
+                        ),
+                        decoration: BoxDecoration(
+                          color: _selectedWoptMstIdx == m.woptMstIdx
+                              ? AppColors.primary.withAlpha((0.1 * 255).round())
+                              : Colors.white,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: _selectedWoptMstIdx == m.woptMstIdx
+                                ? AppColors.primary
+                                : AppColors.border,
+                            width: _selectedWoptMstIdx == m.woptMstIdx ? 2 : 1,
+                          ),
+                        ),
+                        child: Text(
+                          m.optionName ?? '-',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                            color: _selectedWoptMstIdx == m.woptMstIdx
+                                ? AppColors.primary
+                                : AppColors.textPrimary,
+                          ),
+                        ),
                       ),
                     ),
                   )
                   .toList(),
-            ),
-            const SizedBox(height: 32),
-            Consumer<ReservationService>(
-              builder: (context, reservationService, child) => ElevatedButton(
-                onPressed: reservationService.isLoading
-                    ? null
-                    : _handleReservation,
-                child: reservationService.isLoading
-                    ? const SizedBox(
-                        height: 20,
-                        width: 20,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          color: Colors.white,
+            );
+          },
+        ),
+        const SizedBox(height: 24),
+        const Text(
+          '소옵션 선택',
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w600,
+            color: AppColors.textPrimary,
+          ),
+        ),
+        const SizedBox(height: 12),
+        Consumer<WashOptionService>(
+          builder: (context, washOptionService, child) {
+            final master = _selectedWoptMstIdx == null
+                ? null
+                : (() {
+                    final list = washOptionService.masters
+                        .where((m) => m.woptMstIdx == _selectedWoptMstIdx)
+                        .toList();
+                    return list.isEmpty ? null : list.first;
+                  })();
+            final details = master?.details ?? const [];
+
+            if (_selectedWoptMstIdx == null) {
+              return Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: AppColors.surfaceVariant,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Row(
+                  children: [
+                    Icon(
+                      Icons.info_outline,
+                      color: AppColors.textSecondary,
+                      size: 20,
+                    ),
+                    SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        '중옵션을 먼저 선택해주세요',
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: AppColors.textSecondary,
                         ),
-                      )
-                    : const Text('예약하기'),
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            }
+            if (details.isEmpty) {
+              return Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: AppColors.surfaceVariant,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Row(
+                  children: [
+                    Icon(
+                      Icons.info_outline,
+                      color: AppColors.textSecondary,
+                      size: 20,
+                    ),
+                    SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        '소옵션이 없습니다',
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: AppColors.textSecondary,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            }
+            return Column(
+              children: details
+                  .map(
+                    (d) => Padding(
+                      padding: const EdgeInsets.only(bottom: 12),
+                      child: InkWell(
+                        onTap: () => setState(() {
+                          _selectedWoptDtlIdx = d.woptDtlIdx;
+                          _selectedSubOptionName = d.optionName;
+                          _selectedPrice = d.value2 ?? 0;
+                        }),
+                        child: Container(
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            color: _selectedWoptDtlIdx == d.woptDtlIdx
+                                ? AppColors.primary.withAlpha(
+                                    (0.1 * 255).round(),
+                                  )
+                                : Colors.white,
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: _selectedWoptDtlIdx == d.woptDtlIdx
+                                  ? AppColors.primary
+                                  : AppColors.border,
+                              width: _selectedWoptDtlIdx == d.woptDtlIdx
+                                  ? 2
+                                  : 1,
+                            ),
+                          ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text(
+                                d.optionName ?? '-',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w600,
+                                  color: _selectedWoptDtlIdx == d.woptDtlIdx
+                                      ? AppColors.primary
+                                      : AppColors.textPrimary,
+                                ),
+                              ),
+                              Text(
+                                '${(d.value2 ?? 0).toString().replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (m) => '${m[1]},')}원',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w600,
+                                  color: _selectedWoptDtlIdx == d.woptDtlIdx
+                                      ? AppColors.primary
+                                      : AppColors.textPrimary,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  )
+                  .toList(),
+            );
+          },
+        ),
+        if (_selectedWoptMstIdx != null && _selectedWoptDtlIdx != null) ...[
+          const SizedBox(height: 24),
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: AppColors.primary.withAlpha((0.1 * 255).round()),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text(
+                  '총 결제 금액',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
+                Text(
+                  '${_totalPrice.toString().replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (m) => '${m[1]},')}원',
+                  style: const TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.primary,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+
+  // ───────────────────────────────────────────────────────────
+  //  Step 3 : 날짜 / 시간 + 예약 정보 요약
+  // ───────────────────────────────────────────────────────────
+  Widget _buildStep3() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          '날짜',
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w600,
+            color: AppColors.textPrimary,
+          ),
+        ),
+        const SizedBox(height: 12),
+        InkWell(
+          onTap: _selectDate,
+          child: Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: AppColors.border),
+            ),
+            child: Row(
+              children: [
+                const Icon(
+                  Icons.calendar_today_outlined,
+                  color: AppColors.textSecondary,
+                ),
+                const SizedBox(width: 12),
+                Text(
+                  _selectedDate != null
+                      ? '${_selectedDate!.year}년 ${_selectedDate!.month}월 ${_selectedDate!.day}일'
+                      : '날짜를 선택하세요',
+                  style: TextStyle(
+                    color: _selectedDate != null
+                        ? AppColors.textPrimary
+                        : AppColors.textSecondary,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+        const SizedBox(height: 24),
+        const Text(
+          '시간',
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w600,
+            color: AppColors.textPrimary,
+          ),
+        ),
+        const SizedBox(height: 12),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: _availableTimes
+              .map(
+                (time) => ChoiceChip(
+                  label: Text(time),
+                  selected: _selectedTime == time,
+                  onSelected: (selected) =>
+                      setState(() => _selectedTime = selected ? time : null),
+                  selectedColor: AppColors.primary.withAlpha(
+                    (0.2 * 255).round(),
+                  ),
+                  labelStyle: TextStyle(
+                    color: _selectedTime == time
+                        ? AppColors.primary
+                        : AppColors.textSecondary,
+                    fontWeight: _selectedTime == time
+                        ? FontWeight.w600
+                        : FontWeight.normal,
+                  ),
+                ),
+              )
+              .toList(),
+        ),
+        const SizedBox(height: 24),
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: AppColors.surfaceVariant,
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                '예약 정보 요약',
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+              const SizedBox(height: 12),
+              if (_selectedMidOptionName != null) ...[
+                _buildSummaryRow('중옵션', _selectedMidOptionName ?? '-'),
+                const SizedBox(height: 8),
+              ],
+              if (_selectedSubOptionName != null) ...[
+                _buildSummaryRow('소옵션', _selectedSubOptionName ?? '-'),
+                const SizedBox(height: 8),
+              ],
+              _buildSummaryRow(
+                '날짜',
+                _selectedDate != null
+                    ? '${_selectedDate!.year}년 ${_selectedDate!.month}월 ${_selectedDate!.day}일'
+                    : '-',
+              ),
+              const SizedBox(height: 8),
+              _buildSummaryRow('시간', _selectedTime ?? '-'),
+              const SizedBox(height: 12),
+              const Divider(),
+              const SizedBox(height: 12),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text(
+                    '총 결제 금액',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.textPrimary,
+                    ),
+                  ),
+                  Text(
+                    '${_totalPrice.toString().replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (m) => '${m[1]},')}원',
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.primary,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSummaryRow(String label, String value) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(
+          label,
+          style: const TextStyle(fontSize: 14, color: AppColors.textSecondary),
+        ),
+        Text(
+          value,
+          style: const TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.w600,
+            color: AppColors.textPrimary,
+          ),
+        ),
+      ],
+    );
+  }
+
+  // ───────────────────────────────────────────────────────────
+  //  Step 4 : 최종 결제
+  // ───────────────────────────────────────────────────────────
+  Widget _buildStep4() {
+    return Consumer<ReservationService>(
+      builder: (context, reservationService, child) => Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            '결제하기',
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+              color: AppColors.textPrimary,
+            ),
+          ),
+          const SizedBox(height: 24),
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: AppColors.surfaceVariant,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  '최종 결제 정보',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                _buildSummaryRow('중옵션', _selectedMidOptionName ?? '-'),
+                const SizedBox(height: 8),
+                _buildSummaryRow('소옵션', _selectedSubOptionName ?? '-'),
+                const SizedBox(height: 8),
+                _buildSummaryRow(
+                  '날짜',
+                  '${_selectedDate!.year}년 ${_selectedDate!.month}월 ${_selectedDate!.day}일',
+                ),
+                const SizedBox(height: 8),
+                _buildSummaryRow('시간', _selectedTime!),
+                const SizedBox(height: 12),
+                const Divider(),
+                const SizedBox(height: 12),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text(
+                      '총 결제 금액',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.textPrimary,
+                      ),
+                    ),
+                    Text(
+                      '${_totalPrice.toString().replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (m) => '${m[1]},')}원',
+                      style: const TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.primary,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 32),
+          ElevatedButton(
+            onPressed: reservationService.isLoading ? null : _handleReservation,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primary,
+              minimumSize: const Size(double.infinity, 50),
+            ),
+            child: reservationService.isLoading
+                ? const SizedBox(
+                    height: 20,
+                    width: 20,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: Colors.white,
+                    ),
+                  )
+                : const Text(
+                    '결제하기',
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                  ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ───────────────────────────────────────────────────────────
+  //  build
+  // ───────────────────────────────────────────────────────────
+  @override
+  Widget build(BuildContext context) {
+    final mediaQuery = MediaQuery.of(context);
+    final bottomPadding = mediaQuery.padding.bottom;
+
+    return PopScope(
+      canPop: _currentStep <= 1,
+      onPopInvokedWithResult: (didPop, result) {
+        if (didPop) return;
+        if (_currentStep > 1) {
+          _previousStep();
+        }
+      },
+      child: Scaffold(
+        appBar: AppBar(
+          title: const Text('출장 세차 예약'),
+          automaticallyImplyLeading: false,
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back),
+            onPressed: () {
+              if (_currentStep > 1) {
+                _previousStep();
+              } else {
+                Navigator.pop(context);
+              }
+            },
+          ),
+        ),
+        body: Column(
+          children: [
+            _buildStepIndicator(),
+            Expanded(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.only(
+                  left: 24,
+                  right: 24,
+                  top: 24,
+                  bottom: 24,
+                ),
+                child: _buildStepContent(),
+              ),
+            ),
+            Container(
+              padding: EdgeInsets.only(
+                left: 24,
+                right: 24,
+                top: 16,
+                bottom: bottomPadding + 16,
+              ),
+              decoration: const BoxDecoration(
+                color: Colors.white,
+                border: Border(
+                  top: BorderSide(color: AppColors.border, width: 1),
+                ),
+              ),
+              child: Row(
+                children: [
+                  if (_currentStep > 1)
+                    Expanded(
+                      child: OutlinedButton(
+                        onPressed: _previousStep,
+                        style: OutlinedButton.styleFrom(
+                          side: const BorderSide(color: AppColors.border),
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                        ),
+                        child: const Text('이전'),
+                      ),
+                    ),
+                  if (_currentStep > 1) const SizedBox(width: 12),
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: _canProceedToNextStep && _currentStep < 4
+                          ? _nextStep
+                          : null,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.primary,
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                      ),
+                      child: Text(
+                        _currentStep < 4 ? '다음' : '완료',
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
           ],

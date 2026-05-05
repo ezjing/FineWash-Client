@@ -8,6 +8,7 @@ import '../services/vehicle_service.dart';
 import '../services/reservation_service.dart';
 import '../services/payment_service.dart';
 import '../services/auth_service.dart';
+import '../services/wash_option_service.dart';
 import '../utils/app_colors.dart';
 import '../utils/currency_formatter.dart';
 import 'vehicle_registration_screen.dart';
@@ -27,8 +28,12 @@ class _PartnerWashReservationScreenState
   int _currentStep = 1; // 현재 단계 (1-4)
   int? _selectedVehicleId;
   int? _selectedBusDtlIdx;
-  String? _selectedMidOption; // 중옵션: 'internal', 'external', 'both'
-  String? _selectedSubOption; // 소옵션: 'basic', 'premium', 'full'
+  int? _selectedBusMstIdx;
+  int? _selectedWoptMstIdx;
+  int? _selectedWoptDtlIdx;
+  String? _selectedMidOptionName;
+  String? _selectedSubOptionName;
+  int _selectedPrice = 0;
   DateTime? _selectedDate;
   String? _selectedTime;
   AddressResult? _currentLocation; // 현재 위치 (사용자 위치)
@@ -45,26 +50,8 @@ class _PartnerWashReservationScreenState
     '17:00',
   ];
 
-  // 중옵션 데이터
-  final List<Map<String, dynamic>> _midOptions = [
-    {'id': 'internal', 'name': '내부'},
-    {'id': 'external', 'name': '외부'},
-    {'id': 'both', 'name': '내/외부'},
-  ];
-
-  // 소옵션 데이터
-  final List<Map<String, dynamic>> _subOptions = [
-    {'id': 'basic', 'name': '기본선택', 'price': 10000},
-    {'id': 'premium', 'name': '프리미엄 세차', 'price': 40000},
-    {'id': 'full', 'name': '풀 패키지', 'price': 65000},
-  ];
-
   int get _totalPrice {
-    if (_selectedSubOption == null) return 0;
-    final subOption = _subOptions.firstWhere(
-      (opt) => opt['id'] == _selectedSubOption,
-    );
-    return subOption['price'] as int;
+    return _selectedPrice;
   }
 
   bool get _canProceedToNextStep {
@@ -73,8 +60,8 @@ class _PartnerWashReservationScreenState
         return _currentLocation != null && _selectedBusDtlIdx != null;
       case 2:
         return _selectedVehicleId != null &&
-            _selectedMidOption != null &&
-            _selectedSubOption != null;
+            _selectedWoptMstIdx != null &&
+            _selectedWoptDtlIdx != null;
       case 3:
         return _selectedDate != null && _selectedTime != null;
       case 4:
@@ -126,11 +113,22 @@ class _PartnerWashReservationScreenState
         context,
         listen: false,
       );
+      final washOptionService = Provider.of<WashOptionService>(
+        context,
+        listen: false,
+      );
       setState(() {
         _currentLocation = result;
         _currentLocationController.text = result.fullAddress;
         _selectedBusDtlIdx = null;
+        _selectedBusMstIdx = null;
+        _selectedWoptMstIdx = null;
+        _selectedWoptDtlIdx = null;
+        _selectedMidOptionName = null;
+        _selectedSubOptionName = null;
+        _selectedPrice = 0;
       });
+      washOptionService.clear();
       await businessService.searchLogic2(
         latitude: result.latitude,
         longitude: result.longitude,
@@ -159,8 +157,8 @@ class _PartnerWashReservationScreenState
     // 입력 검증
     if (_selectedVehicleId == null ||
         _selectedBusDtlIdx == null ||
-        _selectedMidOption == null ||
-        _selectedSubOption == null ||
+        _selectedWoptMstIdx == null ||
+        _selectedWoptDtlIdx == null ||
         _selectedDate == null ||
         _selectedTime == null) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -172,12 +170,8 @@ class _PartnerWashReservationScreenState
       return;
     }
 
-    final selectedSubOption = _subOptions.firstWhere(
-      (opt) => opt['id'] == _selectedSubOption,
-    );
-    final selectedMidOption = _midOptions.firstWhere(
-      (opt) => opt['id'] == _selectedMidOption,
-    );
+    final selectedMidName = _selectedMidOptionName ?? '-';
+    final selectedSubName = _selectedSubOptionName ?? '-';
     final authService = Provider.of<AuthService>(context, listen: false);
     final reservationService = Provider.of<ReservationService>(
       context,
@@ -205,8 +199,7 @@ class _PartnerWashReservationScreenState
       context: context,
       amount: _totalPrice,
       merchantUid: merchantUid,
-      name:
-          '${selectedMidOption['name']} ${selectedSubOption['name']} - 제휴 세차장',
+      name: '$selectedMidName $selectedSubName - 제휴 세차장',
       buyerName: user.name ?? '고객',
       buyerTel: user.phone ?? '010-0000-0000',
       buyerEmail: user.email ?? 'customer@example.com',
@@ -269,8 +262,8 @@ class _PartnerWashReservationScreenState
           final success = await reservationService.saveLogic2(
             vehicleId: _selectedVehicleId!,
             mainOption: '방문',
-            midOption: selectedMidOption['name'] as String,
-            subOption: selectedSubOption['name'] as String,
+            midOption: selectedMidName,
+            subOption: selectedSubName,
             date: dateStr,
             time: _selectedTime!,
             busDtlIdx: _selectedBusDtlIdx!,
@@ -568,39 +561,49 @@ class _PartnerWashReservationScreenState
                 ],
               ),
             )
-          else if (businessService.nearbyBusinesses.isEmpty)
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: AppColors.surfaceVariant,
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: const Row(
-                children: [
-                  Icon(
-                    Icons.info_outline,
-                    color: AppColors.textSecondary,
-                    size: 20,
-                  ),
-                  SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      '주변 제휴 세차장이 없습니다',
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: AppColors.textSecondary,
-                      ),
+          else ...[
+            Builder(
+              builder: (context) {
+                final allNearby = businessService.nearbyBusinesses;
+                final partners =
+                    allNearby.where((b) => b.businessType == 'PARTNER').toList();
+
+                if (partners.isEmpty) {
+                  return Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: AppColors.surfaceVariant,
+                      borderRadius: BorderRadius.circular(12),
                     ),
-                  ),
-                ],
-              ),
-            )
-          else
-            ...businessService.nearbyBusinesses.asMap().entries.map((entry) {
+                    child: Row(
+                      children: [
+                        const Icon(
+                          Icons.info_outline,
+                          color: AppColors.textSecondary,
+                          size: 20,
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            allNearby.isEmpty
+                                ? '주변 제휴 세차장이 없습니다'
+                                : '조회된 사업장(${allNearby.length}개) 중 제휴(PARTNER) 세차장이 없습니다',
+                            style: const TextStyle(
+                              fontSize: 14,
+                              color: AppColors.textSecondary,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                }
+
+                return Column(
+                  children: partners.asMap().entries.map((entry) {
               final index = entry.key;
               final business = entry.value;
-              final isLast =
-                  index == businessService.nearbyBusinesses.length - 1;
+              final isLast = index == partners.length - 1;
               final room = _getSelectableRoom(business);
               final busDtlIdx = room?.busDtlIdx;
               final isSelectable = busDtlIdx != null;
@@ -613,7 +616,23 @@ class _PartnerWashReservationScreenState
                 padding: EdgeInsets.only(bottom: isLast ? 0 : 12),
                 child: InkWell(
                   onTap: isSelectable
-                      ? () => setState(() => _selectedBusDtlIdx = busDtlIdx)
+                      ? () async {
+                          final washOptionService =
+                              context.read<WashOptionService>();
+                          setState(() {
+                            _selectedBusDtlIdx = busDtlIdx;
+                            _selectedBusMstIdx = business.busMstIdx;
+                            _selectedWoptMstIdx = null;
+                            _selectedWoptDtlIdx = null;
+                            _selectedMidOptionName = null;
+                            _selectedSubOptionName = null;
+                            _selectedPrice = 0;
+                          });
+                          washOptionService.clear();
+                          await washOptionService.searchLogic2(
+                            business.busMstIdx,
+                          );
+                        }
                       : null,
                   child: Container(
                     padding: const EdgeInsets.all(16),
@@ -714,7 +733,11 @@ class _PartnerWashReservationScreenState
                   ),
                 ),
               );
-            }),
+                  }).toList(),
+                );
+              },
+            ),
+          ],
         ],
       ],
     );
@@ -853,45 +876,120 @@ class _PartnerWashReservationScreenState
           ),
         ),
         const SizedBox(height: 12),
-        Wrap(
-          spacing: 12,
-          runSpacing: 12,
-          children: _midOptions
-              .map(
-                (option) => InkWell(
-                  onTap: () =>
-                      setState(() => _selectedMidOption = option['id']),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 20,
-                      vertical: 16,
-                    ),
-                    decoration: BoxDecoration(
-                      color: _selectedMidOption == option['id']
-                          ? AppColors.secondary.withAlpha((0.1 * 255).round())
-                          : Colors.white,
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
-                        color: _selectedMidOption == option['id']
-                            ? AppColors.secondary
-                            : AppColors.border,
-                        width: _selectedMidOption == option['id'] ? 2 : 1,
-                      ),
-                    ),
-                    child: Text(
-                      option['name'],
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                        color: _selectedMidOption == option['id']
-                            ? AppColors.secondary
-                            : AppColors.textPrimary,
-                      ),
-                    ),
-                  ),
+        Consumer<WashOptionService>(
+          builder: (context, washOptionService, child) {
+            final masters = washOptionService.masters;
+            if (_selectedBusMstIdx == null) {
+              return Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: AppColors.surfaceVariant,
+                  borderRadius: BorderRadius.circular(12),
                 ),
-              )
-              .toList(),
+                child: const Row(
+                  children: [
+                    Icon(
+                      Icons.info_outline,
+                      color: AppColors.textSecondary,
+                      size: 20,
+                    ),
+                    SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        '먼저 세차장을 선택해주세요',
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: AppColors.textSecondary,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            }
+            if (washOptionService.isLoading) {
+              return const Padding(
+                padding: EdgeInsets.symmetric(vertical: 12),
+                child: Center(
+                  child: CircularProgressIndicator(color: AppColors.secondary),
+                ),
+              );
+            }
+            if (masters.isEmpty) {
+              return Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: AppColors.surfaceVariant,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Row(
+                  children: [
+                    Icon(
+                      Icons.info_outline,
+                      color: AppColors.textSecondary,
+                      size: 20,
+                    ),
+                    SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        '해당 세차장에 등록된 세차 옵션이 없습니다',
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: AppColors.textSecondary,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            }
+            return Wrap(
+              spacing: 12,
+              runSpacing: 12,
+              children: masters
+                  .map(
+                    (m) => InkWell(
+                      onTap: () => setState(() {
+                        _selectedWoptMstIdx = m.woptMstIdx;
+                        _selectedWoptDtlIdx = null;
+                        _selectedMidOptionName = m.optionName;
+                        _selectedSubOptionName = null;
+                        _selectedPrice = 0;
+                      }),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 20,
+                          vertical: 16,
+                        ),
+                        decoration: BoxDecoration(
+                          color: _selectedWoptMstIdx == m.woptMstIdx
+                              ? AppColors.secondary
+                                  .withAlpha((0.1 * 255).round())
+                              : Colors.white,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: _selectedWoptMstIdx == m.woptMstIdx
+                                ? AppColors.secondary
+                                : AppColors.border,
+                            width: _selectedWoptMstIdx == m.woptMstIdx ? 2 : 1,
+                          ),
+                        ),
+                        child: Text(
+                          m.optionName ?? '-',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                            color: _selectedWoptMstIdx == m.woptMstIdx
+                                ? AppColors.secondary
+                                : AppColors.textPrimary,
+                          ),
+                        ),
+                      ),
+                    ),
+                  )
+                  .toList(),
+            );
+          },
         ),
         const SizedBox(height: 24),
         const Text(
@@ -903,55 +1001,133 @@ class _PartnerWashReservationScreenState
           ),
         ),
         const SizedBox(height: 12),
-        ..._subOptions.map(
-          (option) => Padding(
-            padding: const EdgeInsets.only(bottom: 12),
-            child: InkWell(
-              onTap: () => setState(() => _selectedSubOption = option['id']),
-              child: Container(
+        Consumer<WashOptionService>(
+          builder: (context, washOptionService, child) {
+            final master = _selectedWoptMstIdx == null
+                ? null
+                : (() {
+                    final list = washOptionService.masters
+                        .where((m) => m.woptMstIdx == _selectedWoptMstIdx)
+                        .toList();
+                    return list.isEmpty ? null : list.first;
+                  })();
+            final details = master?.details ?? const [];
+            if (_selectedWoptMstIdx == null) {
+              return Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: _selectedSubOption == option['id']
-                      ? AppColors.secondary.withAlpha((0.1 * 255).round())
-                      : Colors.white,
+                  color: AppColors.surfaceVariant,
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                    color: _selectedSubOption == option['id']
-                        ? AppColors.secondary
-                        : AppColors.border,
-                    width: _selectedSubOption == option['id'] ? 2 : 1,
-                  ),
                 ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                child: const Row(
                   children: [
-                    Text(
-                      option['name'],
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                        color: _selectedSubOption == option['id']
-                            ? AppColors.secondary
-                            : AppColors.textPrimary,
-                      ),
+                    Icon(
+                      Icons.info_outline,
+                      color: AppColors.textSecondary,
+                      size: 20,
                     ),
-                    Text(
-                      '${(option['price'] as int).toString().replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (m) => '${m[1]},')}원',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                        color: _selectedSubOption == option['id']
-                            ? AppColors.secondary
-                            : AppColors.textPrimary,
+                    SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        '중옵션을 먼저 선택해주세요',
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: AppColors.textSecondary,
+                        ),
                       ),
                     ),
                   ],
                 ),
-              ),
-            ),
-          ),
+              );
+            }
+            if (details.isEmpty) {
+              return Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: AppColors.surfaceVariant,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Row(
+                  children: [
+                    Icon(
+                      Icons.info_outline,
+                      color: AppColors.textSecondary,
+                      size: 20,
+                    ),
+                    SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        '소옵션이 없습니다',
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: AppColors.textSecondary,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            }
+            return Column(
+              children: details
+                  .map(
+                    (d) => Padding(
+                      padding: const EdgeInsets.only(bottom: 12),
+                      child: InkWell(
+                        onTap: () => setState(() {
+                          _selectedWoptDtlIdx = d.woptDtlIdx;
+                          _selectedSubOptionName = d.optionName;
+                          _selectedPrice = d.value2 ?? 0;
+                        }),
+                        child: Container(
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            color: _selectedWoptDtlIdx == d.woptDtlIdx
+                                ? AppColors.secondary
+                                    .withAlpha((0.1 * 255).round())
+                                : Colors.white,
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: _selectedWoptDtlIdx == d.woptDtlIdx
+                                  ? AppColors.secondary
+                                  : AppColors.border,
+                              width: _selectedWoptDtlIdx == d.woptDtlIdx ? 2 : 1,
+                            ),
+                          ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text(
+                                d.optionName ?? '-',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w600,
+                                  color: _selectedWoptDtlIdx == d.woptDtlIdx
+                                      ? AppColors.secondary
+                                      : AppColors.textPrimary,
+                                ),
+                              ),
+                              Text(
+                                '${(d.value2 ?? 0).toString().replaceAllMapped(RegExp(r'(\\d{1,3})(?=(\\d{3})+(?!\\d))'), (m) => '${m[1]},')}원',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w600,
+                                  color: _selectedWoptDtlIdx == d.woptDtlIdx
+                                      ? AppColors.secondary
+                                      : AppColors.textPrimary,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  )
+                  .toList(),
+            );
+          },
         ),
-        if (_selectedMidOption != null && _selectedSubOption != null) ...[
+        if (_selectedWoptMstIdx != null && _selectedWoptDtlIdx != null) ...[
           const SizedBox(height: 24),
           Container(
             padding: const EdgeInsets.all(16),
@@ -1082,22 +1258,18 @@ class _PartnerWashReservationScreenState
                 ),
               ),
               const SizedBox(height: 12),
-              if (_selectedMidOption != null)
+              if (_selectedMidOptionName != null)
                 _buildSummaryRow(
                   '중옵션',
-                  _midOptions.firstWhere(
-                    (opt) => opt['id'] == _selectedMidOption,
-                  )['name'],
+                  _selectedMidOptionName ?? '-',
                 ),
-              if (_selectedMidOption != null) const SizedBox(height: 8),
-              if (_selectedSubOption != null)
+              if (_selectedMidOptionName != null) const SizedBox(height: 8),
+              if (_selectedSubOptionName != null)
                 _buildSummaryRow(
                   '소옵션',
-                  _subOptions.firstWhere(
-                    (opt) => opt['id'] == _selectedSubOption,
-                  )['name'],
+                  _selectedSubOptionName ?? '-',
                 ),
-              if (_selectedSubOption != null) const SizedBox(height: 8),
+              if (_selectedSubOptionName != null) const SizedBox(height: 8),
               _buildSummaryRow(
                 '날짜',
                 _selectedDate != null
@@ -1191,16 +1363,12 @@ class _PartnerWashReservationScreenState
                 const SizedBox(height: 16),
                 _buildSummaryRow(
                   '중옵션',
-                  _midOptions.firstWhere(
-                    (opt) => opt['id'] == _selectedMidOption,
-                  )['name'],
+                  _selectedMidOptionName ?? '-',
                 ),
                 const SizedBox(height: 8),
                 _buildSummaryRow(
                   '소옵션',
-                  _subOptions.firstWhere(
-                    (opt) => opt['id'] == _selectedSubOption,
-                  )['name'],
+                  _selectedSubOptionName ?? '-',
                 ),
                 const SizedBox(height: 8),
                 _buildSummaryRow(
@@ -1267,72 +1435,94 @@ class _PartnerWashReservationScreenState
     final mediaQuery = MediaQuery.of(context);
     final bottomPadding = mediaQuery.padding.bottom;
 
-    return Scaffold(
-      appBar: AppBar(title: const Text('제휴 세차장 예약')),
-      body: Column(
-        children: [
-          _buildStepIndicator(),
-          Expanded(
-            child: SingleChildScrollView(
+    return PopScope(
+      canPop: _currentStep <= 1,
+      onPopInvokedWithResult: (didPop, result) {
+        if (didPop) return;
+        if (_currentStep > 1) {
+          _previousStep();
+        }
+      },
+      child: Scaffold(
+        appBar: AppBar(
+          title: const Text('제휴 세차장 예약'),
+          automaticallyImplyLeading: false,
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back),
+            onPressed: () {
+              if (_currentStep > 1) {
+                _previousStep();
+              } else {
+                Navigator.pop(context);
+              }
+            },
+          ),
+        ),
+        body: Column(
+          children: [
+            _buildStepIndicator(),
+            Expanded(
+              child: SingleChildScrollView(
+                padding: EdgeInsets.only(
+                  left: 24,
+                  right: 24,
+                  top: 24,
+                  bottom: 24,
+                ),
+                child: _buildStepContent(),
+              ),
+            ),
+            Container(
               padding: EdgeInsets.only(
                 left: 24,
                 right: 24,
-                top: 24,
-                bottom: 24,
+                top: 16,
+                bottom: bottomPadding + 16,
               ),
-              child: _buildStepContent(),
-            ),
-          ),
-          Container(
-            padding: EdgeInsets.only(
-              left: 24,
-              right: 24,
-              top: 16,
-              bottom: bottomPadding + 16,
-            ),
-            decoration: const BoxDecoration(
-              color: Colors.white,
-              border: Border(
-                top: BorderSide(color: AppColors.border, width: 1),
+              decoration: const BoxDecoration(
+                color: Colors.white,
+                border: Border(
+                  top: BorderSide(color: AppColors.border, width: 1),
+                ),
               ),
-            ),
-            child: Row(
-              children: [
-                if (_currentStep > 1)
+              child: Row(
+                children: [
+                  if (_currentStep > 1)
+                    Expanded(
+                      child: OutlinedButton(
+                        onPressed: _previousStep,
+                        style: OutlinedButton.styleFrom(
+                          side: const BorderSide(color: AppColors.border),
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                        ),
+                        child: const Text('이전'),
+                      ),
+                    ),
+                  if (_currentStep > 1) const SizedBox(width: 12),
                   Expanded(
-                    child: OutlinedButton(
-                      onPressed: _previousStep,
-                      style: OutlinedButton.styleFrom(
-                        side: const BorderSide(color: AppColors.border),
+                    flex: _currentStep == 1 ? 1 : 1,
+                    child: ElevatedButton(
+                      onPressed: _canProceedToNextStep && _currentStep < 4
+                          ? _nextStep
+                          : null,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.secondary,
                         padding: const EdgeInsets.symmetric(vertical: 16),
                       ),
-                      child: const Text('이전'),
-                    ),
-                  ),
-                if (_currentStep > 1) const SizedBox(width: 12),
-                Expanded(
-                  flex: _currentStep == 1 ? 1 : 1,
-                  child: ElevatedButton(
-                    onPressed: _canProceedToNextStep && _currentStep < 4
-                        ? _nextStep
-                        : null,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.secondary,
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                    ),
-                    child: Text(
-                      _currentStep < 4 ? '다음' : '완료',
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
+                      child: Text(
+                        _currentStep < 4 ? '다음' : '완료',
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
                     ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

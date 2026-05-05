@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../services/auth_service.dart';
 import '../services/social_auth_service.dart';
 import '../utils/app_colors.dart';
+import '../utils/app_snackbar.dart';
 import 'signup_screen.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -39,11 +40,10 @@ class _LoginScreenState extends State<LoginScreen> {
     final authService = Provider.of<AuthService>(context, listen: false);
     final success = await authService.loginWithSocial(provider);
     if (!success && mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('${provider.name} 로그인에 실패했습니다.'),
-          backgroundColor: Colors.red,
-        ),
+      showAppSnackBar(
+        context,
+        message: '${provider.name} 로그인에 실패했습니다.',
+        type: AppSnackBarType.error,
       );
     }
   }

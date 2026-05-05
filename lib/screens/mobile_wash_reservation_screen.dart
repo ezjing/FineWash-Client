@@ -8,6 +8,8 @@ import '../services/payment_service.dart';
 import '../services/auth_service.dart';
 import '../services/wash_option_service.dart';
 import '../utils/app_colors.dart';
+import '../utils/app_snackbar.dart';
+import '../widgets/reservation_step_indicator.dart';
 import 'vehicle_registration_screen.dart';
 import 'reservation_confirmation_screen.dart';
 import 'address_search_screen.dart';
@@ -148,11 +150,10 @@ class _MobileWashReservationScreenState
         _selectedDate == null ||
         _selectedTime == null ||
         _currentLocation == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('모든 정보를 입력해주세요.'),
-          backgroundColor: AppColors.warning,
-        ),
+      showAppSnackBar(
+        context,
+        message: '모든 정보를 입력해주세요.',
+        type: AppSnackBarType.warning,
       );
       return;
     }
@@ -168,11 +169,10 @@ class _MobileWashReservationScreenState
 
     final user = authService.currentUser;
     if (user == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('로그인이 필요합니다.'),
-          backgroundColor: AppColors.warning,
-        ),
+      showAppSnackBar(
+        context,
+        message: '로그인이 필요합니다.',
+        type: AppSnackBarType.warning,
       );
       return;
     }
@@ -192,11 +192,10 @@ class _MobileWashReservationScreenState
           final impUid = result['imp_uid'] as String?;
           if (impUid == null) {
             if (mounted) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('결제 정보를 확인할 수 없습니다. 고객센터로 문의해주세요.'),
-                  backgroundColor: AppColors.warning,
-                ),
+              showAppSnackBar(
+                context,
+                message: '결제 정보를 확인할 수 없습니다. 고객센터로 문의해주세요.',
+                type: AppSnackBarType.warning,
               );
             }
             return;
@@ -223,12 +222,10 @@ class _MobileWashReservationScreenState
 
           if (!isVerified) {
             if (mounted) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('결제 검증에 실패했습니다. 고객센터로 문의해주세요.'),
-                  backgroundColor: AppColors.warning,
-                  duration: Duration(seconds: 3),
-                ),
+              showAppSnackBar(
+                context,
+                message: '결제 검증에 실패했습니다. 고객센터로 문의해주세요.',
+                type: AppSnackBarType.error,
               );
             }
             return;
@@ -265,23 +262,20 @@ class _MobileWashReservationScreenState
               ),
             );
           } else if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('예약 저장에 실패했습니다. 고객센터로 문의해주세요.'),
-                backgroundColor: AppColors.warning,
-              ),
+            showAppSnackBar(
+              context,
+              message: '예약 저장에 실패했습니다. 고객센터로 문의해주세요.',
+              type: AppSnackBarType.error,
             );
           }
         } else {
           if (mounted) {
             final errorMsg =
                 result['error_msg'] ?? result['message'] ?? '결제에 실패했습니다.';
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(errorMsg),
-                backgroundColor: AppColors.warning,
-                duration: const Duration(seconds: 3),
-              ),
+            showAppSnackBar(
+              context,
+              message: '$errorMsg',
+              type: AppSnackBarType.error,
             );
           }
         }
@@ -289,100 +283,17 @@ class _MobileWashReservationScreenState
     );
   }
 
-  // ───────────────────────────────────────────────────────────
-  //  단계 인디케이터
-  // ───────────────────────────────────────────────────────────
   Widget _buildStepIndicator() {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        border: Border(bottom: BorderSide(color: AppColors.border, width: 1)),
-      ),
-      child: Row(
-        children: List.generate(4, (index) {
-          final step = index + 1;
-          final isActive = step == _currentStep;
-          final isCompleted = step < _currentStep;
-
-          return Expanded(
-            child: Row(
-              children: [
-                Expanded(
-                  child: Column(
-                    children: [
-                      Container(
-                        width: 32,
-                        height: 32,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: isActive || isCompleted
-                              ? AppColors.primary
-                              : AppColors.border,
-                        ),
-                        child: Center(
-                          child: isCompleted
-                              ? const Icon(
-                                  Icons.check,
-                                  color: Colors.white,
-                                  size: 20,
-                                )
-                              : Text(
-                                  '$step',
-                                  style: TextStyle(
-                                    color: isActive || isCompleted
-                                        ? Colors.white
-                                        : AppColors.textSecondary,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        _getStepTitle(step),
-                        style: TextStyle(
-                          fontSize: 11,
-                          color: isActive || isCompleted
-                              ? AppColors.primary
-                              : AppColors.textSecondary,
-                          fontWeight: isActive
-                              ? FontWeight.w600
-                              : FontWeight.normal,
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
-                    ],
-                  ),
-                ),
-                if (step < 4)
-                  Container(
-                    width: 20,
-                    height: 2,
-                    margin: const EdgeInsets.only(bottom: 16),
-                    color: isCompleted ? AppColors.primary : AppColors.border,
-                  ),
-              ],
-            ),
-          );
-        }),
-      ),
+    return ReservationStepIndicator(
+      currentStep: _currentStep,
+      activeColor: AppColors.primary,
+      stepTitles: [
+        '위치/업자\n선택',
+        '차량/옵션\n선택',
+        '날짜/시간\n선택',
+        '결제\n완료',
+      ],
     );
-  }
-
-  String _getStepTitle(int step) {
-    switch (step) {
-      case 1:
-        return '위치/업자\n선택';
-      case 2:
-        return '차량/옵션\n선택';
-      case 3:
-        return '날짜/시간\n선택';
-      case 4:
-        return '결제\n완료';
-      default:
-        return '';
-    }
   }
 
   Widget _buildStepContent() {

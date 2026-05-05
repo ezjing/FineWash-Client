@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../services/business_service.dart';
+import '../utils/app_snackbar.dart';
 
 class BusinessRoomRegisterScreen extends StatefulWidget {
   final int busMstIdx;
@@ -91,9 +92,11 @@ class _BusinessRoomRegisterScreenState
     final start = _tryParseYmd(_startDateController.text);
     final end = _tryParseYmd(_endDateController.text);
     if (start != null && end != null && end.isBefore(start)) {
-      ScaffoldMessenger.of(
+      showAppSnackBar(
         context,
-      ).showSnackBar(const SnackBar(content: Text('종료일자는 시작일자 이후여야 합니다')));
+        message: '종료일자는 시작일자 이후여야 합니다',
+        type: AppSnackBarType.warning,
+      );
       return;
     }
 
@@ -128,24 +131,26 @@ class _BusinessRoomRegisterScreenState
 
       if (!mounted) return;
       if (ok) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(widget.isEditMode ? '룸이 수정되었습니다' : '룸이 추가되었습니다'),
-          ),
+        showAppSnackBar(
+          context,
+          message: widget.isEditMode ? '룸이 수정되었습니다' : '룸이 추가되었습니다',
+          type: AppSnackBarType.success,
         );
         Navigator.pop(context, true);
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(widget.isEditMode ? '룸 수정에 실패했습니다' : '룸 추가에 실패했습니다'),
-          ),
+        showAppSnackBar(
+          context,
+          message: widget.isEditMode ? '룸 수정에 실패했습니다' : '룸 추가에 실패했습니다',
+          type: AppSnackBarType.error,
         );
       }
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(
+      showAppSnackBar(
         context,
-      ).showSnackBar(SnackBar(content: Text('오류가 발생했습니다: $e')));
+        message: '오류가 발생했습니다: $e',
+        type: AppSnackBarType.error,
+      );
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }

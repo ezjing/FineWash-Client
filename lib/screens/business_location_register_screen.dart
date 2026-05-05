@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../services/business_service.dart';
+import '../utils/app_snackbar.dart';
 import 'address_search_screen.dart';
 
 class BusinessLocationRegisterScreen extends StatefulWidget {
@@ -97,8 +98,10 @@ class _BusinessLocationRegisterScreenState
     if (fullAddress == null || fullAddress.trim().isEmpty) return;
     if (lat == null || lng == null) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('주소에서 위도/경도를 가져오지 못했습니다.')),
+        showAppSnackBar(
+          context,
+          message: '주소에서 위도/경도를 가져오지 못했습니다.',
+          type: AppSnackBarType.warning,
         );
       }
       return;
@@ -158,20 +161,20 @@ class _BusinessLocationRegisterScreenState
       }
 
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              widget.locationId != null ? '사업장 정보가 수정되었습니다' : '사업장이 등록되었습니다',
-            ),
-          ),
+        showAppSnackBar(
+          context,
+          message: widget.locationId != null ? '사업장 정보가 수정되었습니다' : '사업장이 등록되었습니다',
+          type: AppSnackBarType.success,
         );
         Navigator.pop(context, true);
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(
+        showAppSnackBar(
           context,
-        ).showSnackBar(SnackBar(content: Text('오류가 발생했습니다: $e')));
+          message: '오류가 발생했습니다: $e',
+          type: AppSnackBarType.error,
+        );
       }
     } finally {
       if (mounted) {

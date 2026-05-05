@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../models/product_model.dart';
 import '../utils/app_colors.dart';
+import '../utils/app_snackbar.dart';
 import '../utils/currency_formatter.dart';
 
 class ShopScreen extends StatefulWidget {
@@ -15,12 +16,11 @@ class _ShopScreenState extends State<ShopScreen> {
 
   void _addToCart(String productId) {
     setState(() => _cart.add(productId));
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('장바구니에 추가되었습니다'),
-        duration: Duration(seconds: 1),
-        backgroundColor: AppColors.success,
-      ),
+    showAppSnackBar(
+      context,
+      message: '장바구니에 추가되었습니다',
+      type: AppSnackBarType.success,
+      durationSeconds: 1,
     );
   }
 

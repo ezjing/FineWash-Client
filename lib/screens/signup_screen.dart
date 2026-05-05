@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../services/auth_service.dart';
 import '../utils/app_colors.dart';
+import '../utils/app_snackbar.dart';
 import 'address_search_screen.dart';
 
 class SignupScreen extends StatefulWidget {
@@ -71,8 +72,10 @@ class _SignupScreenState extends State<SignupScreen> {
       } else {
         if (mounted) {
           final error = authService.lastError ?? '회원가입에 실패했습니다. 다시 시도해주세요.';
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(error), backgroundColor: Colors.red),
+          showAppSnackBar(
+            context,
+            message: error,
+            type: AppSnackBarType.error,
           );
         }
       }

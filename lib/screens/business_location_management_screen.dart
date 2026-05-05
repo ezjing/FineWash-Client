@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../utils/app_colors.dart';
+import '../utils/app_snackbar.dart';
 import '../services/business_service.dart';
 import '../widgets/entity_summary_cards.dart';
 import '../widgets/empty_state_message.dart';
@@ -57,17 +58,25 @@ class _BusinessLocationManagementScreenState
       );
       if (!mounted) return;
       if (deleted) {
-        ScaffoldMessenger.of(
+        showAppSnackBar(
           context,
-        ).showSnackBar(const SnackBar(content: Text('사업장이 삭제되었습니다')));
+          message: '사업장이 삭제되었습니다',
+          type: AppSnackBarType.success,
+        );
       } else {
-        ScaffoldMessenger.of(
+        showAppSnackBar(
           context,
-        ).showSnackBar(const SnackBar(content: Text('사업장 삭제에 실패했습니다')));
+          message: '사업장 삭제에 실패했습니다',
+          type: AppSnackBarType.error,
+        );
       }
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('$e')));
+      showAppSnackBar(
+        context,
+        message: '$e',
+        type: AppSnackBarType.error,
+      );
     }
   }
 

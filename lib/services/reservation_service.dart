@@ -103,7 +103,7 @@ class ReservationService extends ChangeNotifier {
     String? subOption,
     required String date,
     required String time,
-    required int busDtlIdx,
+    required int busMstIdx,
     String? impUid,
     String? merchantUid,
     int? paymentAmount,
@@ -118,7 +118,7 @@ class ReservationService extends ChangeNotifier {
         'sub_option': subOption,
         'date': date,
         'time': time,
-        'bus_dtl_idx': busDtlIdx,
+        'bus_mst_idx': busMstIdx,
       };
 
       // 결제 정보가 있으면 추가

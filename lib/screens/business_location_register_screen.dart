@@ -55,7 +55,7 @@ class _BusinessLocationRegisterScreenState
       _businessNumberController.text = business.businessNumber ?? '';
       _phoneController.text = business.phone ?? '';
       _addressController.text = business.address ?? '';
-      _addressDetailController.text = business.detailAddress ?? '';
+      _addressDetailController.text = business.addressDetail ?? '';
       _emailController.text = business.email ?? '';
       _depositYn = (business.depositYn ?? 'N') == 'Y';
       _depositAmountController.text =
@@ -124,7 +124,7 @@ class _BusinessLocationRegisterScreenState
     final businessNumber = _businessNumberController.text.trim();
     final companyName = _nameController.text.trim();
     final address = _addressController.text.trim();
-    final detailAddress = _addressDetailController.text.trim().isEmpty
+    final addressDetail = _addressDetailController.text.trim().isEmpty
         ? null
         : _addressDetailController.text.trim();
     final phone = _phoneController.text.trim();
@@ -146,7 +146,7 @@ class _BusinessLocationRegisterScreenState
         businessNumber: businessNumber,
         companyName: companyName,
         address: address,
-        detailAddress: detailAddress,
+        addressDetail: addressDetail,
         phone: phone,
         latitude: _latitude,
         longitude: _longitude,
@@ -163,7 +163,9 @@ class _BusinessLocationRegisterScreenState
       if (mounted) {
         showAppSnackBar(
           context,
-          message: widget.locationId != null ? '사업장 정보가 수정되었습니다' : '사업장이 등록되었습니다',
+          message: widget.locationId != null
+              ? '사업장 정보가 수정되었습니다'
+              : '사업장이 등록되었습니다',
           type: AppSnackBarType.success,
         );
         Navigator.pop(context, true);

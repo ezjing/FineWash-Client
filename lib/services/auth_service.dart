@@ -114,6 +114,7 @@ class AuthService extends ChangeNotifier {
     required String email,
     required String phone,
     required String password,
+    required String memberType, // C: 고객, B: 사업자
     String? gender,
     String? address,
     String? addressDetail,
@@ -127,6 +128,7 @@ class AuthService extends ChangeNotifier {
         'email': email,
         'phone': phone,
         'password': password,
+        'member_type': memberType,
         if (gender != null) 'gender': gender,
         if (address != null) 'address': address,
         if (addressDetail != null) 'address_detail': addressDetail,
@@ -153,7 +155,7 @@ class AuthService extends ChangeNotifier {
         phone: phone,
         address: address,
         gender: gender,
-        memberType: 'C', // 기본값: 고객
+        memberType: memberType,
       );
       _isLoading = false;
       notifyListeners();

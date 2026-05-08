@@ -238,8 +238,14 @@ class BusinessMyPageScreen extends StatelessWidget {
                     ),
                   );
 
-                  if (confirmed == true && context.mounted) {
+                  if (confirmed == true) {
                     await authService.logout();
+                    if (context.mounted) {
+                      Navigator.popUntil(
+                        context,
+                        (route) => route.isFirst,
+                      );
+                    }
                   }
                 },
                 style: OutlinedButton.styleFrom(

@@ -14,6 +14,7 @@ class BusinessService extends ChangeNotifier {
   BusinessMasterModel? _currentBusiness;
   BusinessDetailModel? _currentRoom;
   List<ReservationModel> _roomReservations = [];
+  List<ReservationModel> _businessReservations = [];
   int _roomTotalRevenue = 0;
   bool _isLoading = false;
 
@@ -24,6 +25,7 @@ class BusinessService extends ChangeNotifier {
   BusinessMasterModel? get currentBusiness => _currentBusiness;
   BusinessDetailModel? get currentRoom => _currentRoom;
   List<ReservationModel> get roomReservations => _roomReservations;
+  List<ReservationModel> get businessReservations => _businessReservations;
   int get roomTotalRevenue => _roomTotalRevenue;
   bool get isLoading => _isLoading;
 
@@ -123,7 +125,7 @@ class BusinessService extends ChangeNotifier {
     required String businessNumber,
     required String companyName,
     required String address,
-    String? detailAddress,
+    String? addressDetail,
     required String phone,
     double? latitude,
     double? longitude,
@@ -140,8 +142,8 @@ class BusinessService extends ChangeNotifier {
         'businessNumber': businessNumber.trim(),
         'companyName': companyName.trim(),
         'address': address.trim(),
-        if (detailAddress != null && detailAddress.trim().isNotEmpty)
-          'detailAddress': detailAddress.trim(),
+        if (addressDetail != null && addressDetail.trim().isNotEmpty)
+          'addressDetail': addressDetail.trim(),
         'phone': phone.trim(),
         if (latitude != null) 'latitude': latitude,
         if (longitude != null) 'longitude': longitude,
@@ -324,6 +326,75 @@ class BusinessService extends ChangeNotifier {
   void clearCurrentBusiness() {
     _currentBusiness = null;
     notifyListeners();
+  }
+
+  /// 관리자/사업자 예약관리용: 사업장(MST) 기준 예약 목록 합산 조회 (SearchLogic5)
+  /// - 서버에 "사업장별 예약" 단일 API가 없어, 룸(DTL)별 예약을 합산하여 반환
+  /// - busMstIdx가 null이면: 내 사업장 전체(모든 룸)의 예약을 합산
+  Future<bool> searchLogic5({int? busMstIdx}) async {
+    _isLoading = true;
+    notifyListeners();
+
+    try {
+      if (_businesses.isEmpty) {
+        final ok = await searchLogic1();
+        if (!ok) {
+          _businessReservations = [];
+          _isLoading = false;
+          notifyListeners();
+          return false;
+        }
+      }
+
+      final targetBusinesses = busMstIdx == null
+          ? _businesses
+          : _businesses.where((b) => b.busMstIdx == busMstIdx).toList();
+
+      final roomIds = <int>[];
+      for (final b in targetBusinesses) {
+        for (final d in b.businessDetails) {
+          roomIds.add(d.busDtlIdx);
+        }
+      }
+
+      if (roomIds.isEmpty) {
+        _businessReservations = [];
+        _isLoading = false;
+        notifyListeners();
+        return true;
+      }
+
+      final responses = await Future.wait(
+        roomIds.map((id) => _businessRepository.searchLogic1(id)),
+      );
+
+      final merged = <ReservationModel>[];
+      for (final resp in responses) {
+        if (resp['success'] == true && resp['reservations'] is List) {
+          merged.addAll(
+            (resp['reservations'] as List)
+                .map((json) => ReservationModel.fromJson(json))
+                .toList(),
+          );
+        }
+      }
+
+      merged.sort(
+        (a, b) => (b.createdDate ?? DateTime(0)).compareTo(
+          a.createdDate ?? DateTime(0),
+        ),
+      );
+
+      _businessReservations = merged;
+      _isLoading = false;
+      notifyListeners();
+      return true;
+    } catch (e) {
+      _businessReservations = [];
+      _isLoading = false;
+      notifyListeners();
+      return false;
+    }
   }
 
   /// 사업장(MST) 삭제 (SaveLogic6)

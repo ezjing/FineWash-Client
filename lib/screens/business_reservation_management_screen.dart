@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../models/reservation_model.dart';
+import '../services/business_service.dart';
 import '../services/reservation_service.dart';
 import '../utils/app_colors.dart';
 import 'business_reservation_detail_screen.dart';
@@ -15,7 +16,62 @@ class BusinessReservationManagementScreen extends StatefulWidget {
 
 class _BusinessReservationManagementScreenState
     extends State<BusinessReservationManagementScreen> {
-  String _selectedFilter = 'all'; // all, pending, approved, rejected
+  int? _selectedBusMstIdx; // 사업장 선택(필수)
+  String _selectedStatusFilter = 'all'; // all, Y, N, C
+
+  Future<void> _rejectReservation(ReservationModel reservation) async {
+    final reservationService = context.read<ReservationService>();
+    final messenger = ScaffoldMessenger.of(context);
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('예약 거절'),
+        content: Text('예약 #${reservation.resvIdx} 를 거절하시겠습니까?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('취소'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('거절'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true) return;
+
+    try {
+      final ok = await reservationService.rejectReservation(reservation.resvIdx);
+      if (ok) {
+        if (!mounted) return;
+        messenger.showSnackBar(
+          const SnackBar(
+            content: Text('예약이 거절되었습니다.'),
+            backgroundColor: AppColors.success,
+          ),
+        );
+        await _loadReservations();
+      } else {
+        if (!mounted) return;
+        messenger.showSnackBar(
+          const SnackBar(
+            content: Text('예약 거절에 실패했습니다.'),
+            backgroundColor: AppColors.error,
+          ),
+        );
+      }
+    } catch (e) {
+      if (!mounted) return;
+      messenger.showSnackBar(
+        const SnackBar(
+          content: Text('예약 거절 중 오류가 발생했습니다.'),
+          backgroundColor: AppColors.error,
+        ),
+      );
+    }
+  }
 
   @override
   void initState() {
@@ -26,28 +82,37 @@ class _BusinessReservationManagementScreenState
   }
 
   Future<void> _loadReservations() async {
-    final reservationService = Provider.of<ReservationService>(
+    final businessService = Provider.of<BusinessService>(
       context,
       listen: false,
     );
-    await reservationService.searchLogic1();
+
+    // 사업장 목록이 없으면 먼저 조회
+    if (businessService.businesses.isEmpty) {
+      await businessService.searchLogic1();
+    }
+
+    // "전체"를 쓰지 않으므로: 첫 사업장을 기본 선택
+    if (_selectedBusMstIdx == null && businessService.businesses.isNotEmpty) {
+      _selectedBusMstIdx = businessService.businesses.first.busMstIdx;
+    }
+
+    // 선택된 사업장이 없으면(사업장 0개) 예약도 비움
+    if (_selectedBusMstIdx == null) {
+      await businessService.searchLogic5(busMstIdx: -1);
+      return;
+    }
+
+    await businessService.searchLogic5(busMstIdx: _selectedBusMstIdx);
   }
 
   List<ReservationModel> _getFilteredReservations(
     List<ReservationModel> reservations,
   ) {
-    switch (_selectedFilter) {
-      case 'pending':
-        return reservations
-            .where((r) => r.contractYn != 'Y' && r.contractYn != 'N')
-            .toList();
-      case 'approved':
-        return reservations.where((r) => r.contractYn == 'Y').toList();
-      case 'rejected':
-        return reservations.where((r) => r.contractYn == 'N').toList();
-      default:
-        return reservations;
-    }
+    if (_selectedStatusFilter == 'all') return reservations;
+    return reservations
+        .where((r) => r.contractYn == _selectedStatusFilter)
+        .toList();
   }
 
   @override
@@ -57,51 +122,104 @@ class _BusinessReservationManagementScreenState
       appBar: AppBar(title: const Text('예약 관리')),
       body: Column(
         children: [
-          // 필터 탭
+          // 필터 영역 (사업장 + 상태)
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             decoration: const BoxDecoration(
               color: Colors.white,
               border: Border(bottom: BorderSide(color: AppColors.border)),
             ),
-            child: Row(
-              children: [
-                _FilterChip(
-                  label: '전체',
-                  isSelected: _selectedFilter == 'all',
-                  onTap: () => setState(() => _selectedFilter = 'all'),
-                ),
-                const SizedBox(width: 8),
-                _FilterChip(
-                  label: '대기중',
-                  isSelected: _selectedFilter == 'pending',
-                  onTap: () => setState(() => _selectedFilter = 'pending'),
-                ),
-                const SizedBox(width: 8),
-                _FilterChip(
-                  label: '승인',
-                  isSelected: _selectedFilter == 'approved',
-                  onTap: () => setState(() => _selectedFilter = 'approved'),
-                ),
-                const SizedBox(width: 8),
-                _FilterChip(
-                  label: '거절',
-                  isSelected: _selectedFilter == 'rejected',
-                  onTap: () => setState(() => _selectedFilter = 'rejected'),
-                ),
-              ],
+            child: Consumer<BusinessService>(
+              builder: (context, businessService, child) {
+                final businesses = businessService.businesses;
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // 사업장 필터 (전체 + 내 사업장 목록)
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12),
+                      decoration: BoxDecoration(
+                        border: Border.all(color: AppColors.border),
+                        borderRadius: BorderRadius.circular(10),
+                        color: Colors.white,
+                      ),
+                      child: DropdownButtonHideUnderline(
+                        child: DropdownButton<int?>(
+                          value: _selectedBusMstIdx,
+                          isExpanded: true,
+                          icon: const Icon(Icons.keyboard_arrow_down),
+                          items: [
+                            ...businesses.map(
+                              (b) => DropdownMenuItem<int?>(
+                                value: b.busMstIdx,
+                                child: Text(
+                                  b.companyName ?? '사업장 #${b.busMstIdx}',
+                                ),
+                              ),
+                            ),
+                          ],
+                          onChanged: (value) async {
+                            setState(() => _selectedBusMstIdx = value);
+                            await _loadReservations();
+                          },
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    // 상태 필터
+                    SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      child: Row(
+                        children: [
+                          _FilterChip(
+                            label: '전체',
+                            isSelected: _selectedStatusFilter == 'all',
+                            onTap: () async {
+                              setState(() => _selectedStatusFilter = 'all');
+                            },
+                          ),
+                          const SizedBox(width: 8),
+                          _FilterChip(
+                            label: '승인',
+                            isSelected: _selectedStatusFilter == 'Y',
+                            onTap: () async {
+                              setState(() => _selectedStatusFilter = 'Y');
+                            },
+                          ),
+                          const SizedBox(width: 8),
+                          _FilterChip(
+                            label: '거절',
+                            isSelected: _selectedStatusFilter == 'N',
+                            onTap: () async {
+                              setState(() => _selectedStatusFilter = 'N');
+                            },
+                          ),
+                          const SizedBox(width: 8),
+                          _FilterChip(
+                            label: '완료',
+                            isSelected: _selectedStatusFilter == 'C',
+                            onTap: () async {
+                              setState(() => _selectedStatusFilter = 'C');
+                            },
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                );
+              },
             ),
           ),
           // 예약 목록
           Expanded(
-            child: Consumer<ReservationService>(
-              builder: (context, reservationService, child) {
-                if (reservationService.isLoading) {
+            child: Consumer<BusinessService>(
+              builder: (context, businessService, child) {
+                if (businessService.isLoading) {
                   return const Center(child: CircularProgressIndicator());
                 }
 
                 final reservations = _getFilteredReservations(
-                  reservationService.reservations,
+                  businessService.businessReservations,
                 );
 
                 if (reservations.isEmpty) {
@@ -151,6 +269,9 @@ class _BusinessReservationManagementScreenState
                             ),
                           ).then((_) => _loadReservations());
                         },
+                        onReject: reservation.contractYn == 'Y'
+                            ? () => _rejectReservation(reservation)
+                            : null,
                       );
                     },
                   ),
@@ -205,14 +326,21 @@ class _FilterChip extends StatelessWidget {
 class _ReservationCard extends StatelessWidget {
   final ReservationModel reservation;
   final VoidCallback onTap;
+  final VoidCallback? onReject;
 
-  const _ReservationCard({required this.reservation, required this.onTap});
+  const _ReservationCard({
+    required this.reservation,
+    required this.onTap,
+    this.onReject,
+  });
 
   String _getStatusText() {
     if (reservation.contractYn == 'Y') {
       return '승인됨';
     } else if (reservation.contractYn == 'N') {
       return '거절됨';
+    } else if (reservation.contractYn == 'C') {
+      return '완료됨';
     } else {
       return '대기중';
     }
@@ -223,6 +351,8 @@ class _ReservationCard extends StatelessWidget {
       return AppColors.success;
     } else if (reservation.contractYn == 'N') {
       return AppColors.error;
+    } else if (reservation.contractYn == 'C') {
+      return AppColors.primary;
     } else {
       return AppColors.warning;
     }
@@ -334,6 +464,26 @@ class _ReservationCard extends StatelessWidget {
                       style: const TextStyle(
                         fontSize: 14,
                         color: AppColors.textSecondary,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+              if (onReject != null) ...[
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton(
+                        onPressed: onReject,
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: AppColors.error,
+                          side: const BorderSide(color: AppColors.error),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                        ),
+                        child: const Text('예약 거절'),
                       ),
                     ),
                   ],

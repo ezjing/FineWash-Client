@@ -21,6 +21,7 @@ class _SignupScreenState extends State<SignupScreen> {
   final _confirmPasswordController = TextEditingController();
   bool _obscurePassword = true;
   String _gender = 'M';
+  String _memberType = 'C';
   final _addressController = TextEditingController();
   final _addressDetailController = TextEditingController();
 
@@ -36,6 +37,36 @@ class _SignupScreenState extends State<SignupScreen> {
     super.dispose();
   }
 
+  Future<void> _openAddressSearch() async {
+    final authService = Provider.of<AuthService>(context, listen: false);
+    if (authService.isLoading) return;
+
+    final result = await Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => const AddressSearchScreen()),
+    );
+    if (!mounted || result == null) return;
+
+    final fullAddress = (result as dynamic).fullAddress as String?;
+    final lat = (result as dynamic).latitude as double?;
+    final lng = (result as dynamic).longitude as double?;
+    if (fullAddress == null || fullAddress.trim().isEmpty) return;
+    if (lat == null || lng == null) {
+      if (mounted) {
+        showAppSnackBar(
+          context,
+          message: '주소에서 위도/경도를 가져오지 못했습니다.',
+          type: AppSnackBarType.warning,
+        );
+      }
+      return;
+    }
+
+    setState(() {
+      _addressController.text = fullAddress.trim();
+    });
+  }
+
   Future<void> _handleSignup() async {
     if (_formKey.currentState!.validate()) {
       final authService = Provider.of<AuthService>(context, listen: false);
@@ -44,6 +75,7 @@ class _SignupScreenState extends State<SignupScreen> {
         email: _emailController.text.trim(),
         phone: _phoneController.text.trim(),
         password: _passwordController.text,
+        memberType: _memberType,
         gender: _gender,
         address: _addressController.text.trim().isEmpty
             ? null
@@ -72,11 +104,7 @@ class _SignupScreenState extends State<SignupScreen> {
       } else {
         if (mounted) {
           final error = authService.lastError ?? '회원가입에 실패했습니다. 다시 시도해주세요.';
-          showAppSnackBar(
-            context,
-            message: error,
-            type: AppSnackBarType.error,
-          );
+          showAppSnackBar(context, message: error, type: AppSnackBarType.error);
         }
       }
     }
@@ -224,25 +252,23 @@ class _SignupScreenState extends State<SignupScreen> {
                   setState(() => _gender = selection.first);
                 },
               ),
+              const SizedBox(height: 16),
+              SegmentedButton<String>(
+                segments: const [
+                  ButtonSegment(value: 'C', label: Text('고객')),
+                  ButtonSegment(value: 'B', label: Text('사업자')),
+                ],
+                selected: {_memberType},
+                onSelectionChanged: (selection) {
+                  setState(() => _memberType = selection.first);
+                },
+              ),
               const SizedBox(height: 8),
               // Address search (Daum postcode)
               TextFormField(
                 controller: _addressController,
                 readOnly: true,
-                onTap: () async {
-                  final result = await Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => const AddressSearchScreen(),
-                    ),
-                  );
-                  if (result != null) {
-                    setState(
-                      () => _addressController.text =
-                          (result as dynamic).fullAddress as String,
-                    );
-                  }
-                },
+                onTap: _openAddressSearch,
                 decoration: const InputDecoration(
                   labelText: '주소',
                   hintText: '주소를 검색하세요',
@@ -259,41 +285,6 @@ class _SignupScreenState extends State<SignupScreen> {
                 ),
               ),
               const SizedBox(height: 16),
-              Consumer<AuthService>(
-                builder: (context, authService, child) => ElevatedButton(
-                  onPressed: authService.isLoading ? null : _handleSignup,
-                  child: authService.isLoading
-                      ? const SizedBox(
-                          height: 20,
-                          width: 20,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            color: Colors.white,
-                          ),
-                        )
-                      : const Text('가입하기'),
-                ),
-              ),
-              const SizedBox(height: 16),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Text(
-                    '이미 계정이 있으신가요?',
-                    style: TextStyle(color: AppColors.textSecondary),
-                  ),
-                  TextButton(
-                    onPressed: () => Navigator.pop(context),
-                    child: const Text(
-                      '로그인',
-                      style: TextStyle(
-                        color: AppColors.primary,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
               const SizedBox(height: 32),
               Consumer<AuthService>(
                 builder: (context, authService, child) => ElevatedButton(

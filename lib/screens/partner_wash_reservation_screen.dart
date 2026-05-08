@@ -262,7 +262,7 @@ class _PartnerWashReservationScreenState
             subOption: selectedSubName,
             date: dateStr,
             time: _selectedTime!,
-            busDtlIdx: _selectedBusDtlIdx!,
+            busMstIdx: _selectedBusMstIdx!,
             impUid: impUid,
             merchantUid: merchantUid,
             paymentAmount: _totalPrice,

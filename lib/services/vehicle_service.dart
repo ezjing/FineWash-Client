@@ -85,6 +85,75 @@ class VehicleService extends ChangeNotifier {
     }
   }
 
+  // 차량 수정 (SaveLogic2)
+  Future<bool> saveLogic2({
+    required int vehIdx,
+    String? vehicleType,
+    String? model,
+    String? vehicleNumber,
+    String? color,
+    int? year,
+    String? remark,
+  }) async {
+    _isLoading = true;
+    notifyListeners();
+    try {
+      final response = await _vehicleRepository.saveLogic2(vehIdx, {
+        if (vehicleType != null) 'vehicle_type': vehicleType,
+        if (model != null) 'model': model,
+        if (vehicleNumber != null) 'vehicle_number': vehicleNumber,
+        if (color != null) 'color': color,
+        if (year != null) 'year': year,
+        if (remark != null) 'remark': remark,
+      });
+
+      if (response['success'] == true && response['vehicle'] != null) {
+        final updated = VehicleModel.fromJson(response['vehicle']);
+        final index = _vehicles.indexWhere((v) => v.vehIdx == vehIdx);
+        if (index != -1) {
+          _vehicles[index] = updated;
+        } else {
+          _vehicles.insert(0, updated);
+        }
+        _isLoading = false;
+        notifyListeners();
+        return true;
+      }
+
+      _isLoading = false;
+      notifyListeners();
+      return false;
+    } catch (e) {
+      _isLoading = false;
+      notifyListeners();
+      debugPrint('차량 수정 실패: $e');
+      return false;
+    }
+  }
+
+  // 차량 삭제 (SaveLogic3)
+  Future<bool> saveLogic3(int vehIdx) async {
+    _isLoading = true;
+    notifyListeners();
+    try {
+      final response = await _vehicleRepository.saveLogic3(vehIdx);
+      if (response['success'] == true) {
+        _vehicles.removeWhere((v) => v.vehIdx == vehIdx);
+        _isLoading = false;
+        notifyListeners();
+        return true;
+      }
+      _isLoading = false;
+      notifyListeners();
+      return false;
+    } catch (e) {
+      _isLoading = false;
+      notifyListeners();
+      debugPrint('차량 삭제 실패: $e');
+      return false;
+    }
+  }
+
   VehicleModel? getVehicleById(int vehIdx) {
     try {
       return _vehicles.firstWhere((v) => v.vehIdx == vehIdx);

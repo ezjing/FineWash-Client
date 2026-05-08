@@ -56,7 +56,9 @@ class _AddressSearchScreenState extends State<AddressSearchScreen> {
       final data = jsonDecode(message) as Map<String, dynamic>;
       final result = AddressResult.fromJson(data);
 
-      final query = result.fullAddress.trim();
+      final query =
+          (result.roadAddress.isNotEmpty ? result.roadAddress : result.address)
+              .trim();
       if (query.isEmpty) return;
 
       setState(() => _isGeocoding = true);

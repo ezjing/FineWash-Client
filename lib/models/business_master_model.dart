@@ -9,7 +9,7 @@ class BusinessMasterModel {
   final String? phone;
   final String? email;
   final String? address;
-  final String? detailAddress;
+  final String? addressDetail;
   final double? latitude;
   final double? longitude;
   final double? distanceKm; // 주소 기반 거리순 조회 시 포함될 수 있음
@@ -29,7 +29,7 @@ class BusinessMasterModel {
     this.phone,
     this.email,
     this.address,
-    this.detailAddress,
+    this.addressDetail,
     this.latitude,
     this.longitude,
     this.distanceKm,
@@ -54,7 +54,7 @@ class BusinessMasterModel {
       phone: json['phone'],
       email: json['email'],
       address: json['address'],
-      detailAddress: json['detailAddress'] ?? json['detail_address'],
+      addressDetail: json['addressDetail'],
       latitude: _double(json['latitude'] ?? json['lat']),
       longitude: _double(json['longitude'] ?? json['lng']),
       distanceKm: _double(json['distanceKm'] ?? json['distance_km']),
@@ -93,7 +93,7 @@ class BusinessMasterModel {
       'phone': phone,
       'email': email,
       'address': address,
-      'detailAddress': detailAddress,
+      'addressDetail': addressDetail,
       'latitude': latitude,
       'longitude': longitude,
       'distanceKm': distanceKm,

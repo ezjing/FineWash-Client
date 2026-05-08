@@ -38,7 +38,7 @@ class BusinessMasterSummaryCard extends StatelessWidget {
         : '예약금 미사용';
     final addressLine = [
       business.address,
-      business.detailAddress,
+      business.addressDetail,
     ].whereType<String>().map((s) => s.trim()).where((s) => s.isNotEmpty).join(' ');
     final businessTypeLabel = switch (business.businessType) {
       'OUT' => '출장',

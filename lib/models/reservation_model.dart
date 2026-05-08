@@ -1,6 +1,6 @@
 class ReservationModel {
   final int resvIdx;
-  final int? busDtlIdx; // 사업장 DTL 인덱스
+  final int? busMstIdx; // 사업장 MST 인덱스
   final int? memIdx; // 회원 인덱스
   final int? vehIdx; // 차량정보 인덱스
   final String? mainOption; // 예약 대옵션 (출장, 방문)
@@ -18,7 +18,7 @@ class ReservationModel {
 
   ReservationModel({
     required this.resvIdx,
-    this.busDtlIdx,
+    this.busMstIdx,
     this.memIdx,
     this.vehIdx,
     this.mainOption,
@@ -38,7 +38,7 @@ class ReservationModel {
   factory ReservationModel.fromJson(Map<String, dynamic> json) {
     return ReservationModel(
       resvIdx: json['resvIdx'] ?? 0,
-      busDtlIdx: json['busDtlIdx'],
+      busMstIdx: json['busMstIdx'],
       memIdx: json['memIdx'],
       vehIdx: json['vehIdx'],
       mainOption: json['mainOption'],
@@ -63,7 +63,7 @@ class ReservationModel {
   Map<String, dynamic> toJson() {
     return {
       'resvIdx': resvIdx,
-      'busDtlIdx': busDtlIdx,
+      'busMstIdx': busMstIdx,
       'memIdx': memIdx,
       'vehIdx': vehIdx,
       'mainOption': mainOption,

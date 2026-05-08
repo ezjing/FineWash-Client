@@ -4,10 +4,33 @@ import '../models/reservation_model.dart';
 import '../services/auth_service.dart';
 import '../services/reservation_service.dart';
 import '../services/vehicle_service.dart';
+import 'reservation_history_screen.dart';
+import 'vehicle_management_screen.dart';
 import '../utils/app_colors.dart';
 
-class MyPageScreen extends StatelessWidget {
+class MyPageScreen extends StatefulWidget {
   const MyPageScreen({super.key});
+
+  @override
+  State<MyPageScreen> createState() => _MyPageScreenState();
+}
+
+class _MyPageScreenState extends State<MyPageScreen> {
+  bool _didLoad = false;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_didLoad) return;
+    _didLoad = true;
+
+    // 마이페이지 진입 시 예약/차량 카운트가 바로 보이도록 1회 조회
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      context.read<ReservationService>().searchLogic1();
+      context.read<VehicleService>().searchLogic1();
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -128,11 +151,27 @@ class MyPageScreen extends StatelessWidget {
                   icon: Icons.calendar_today_outlined,
                   label: '예약 내역',
                   count: reservations.length,
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const ReservationHistoryScreen(),
+                      ),
+                    );
+                  },
                 ),
                 _MenuItem(
                   icon: Icons.directions_car_outlined,
                   label: '차량 관리',
                   count: vehicles.length,
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const VehicleManagementScreen(),
+                      ),
+                    );
+                  },
                 ),
                 _MenuItem(icon: Icons.notifications_outlined, label: '알림 설정'),
               ],
@@ -321,7 +360,7 @@ class _MenuSection extends StatelessWidget {
         const SizedBox(height: 16),
         ...items.map(
           (item) => InkWell(
-            onTap: () {},
+            onTap: item.onTap,
             child: Padding(
               padding: const EdgeInsets.symmetric(vertical: 12),
               child: Row(
@@ -366,5 +405,11 @@ class _MenuItem {
   final IconData icon;
   final String label;
   final int? count;
-  const _MenuItem({required this.icon, required this.label, this.count});
+  final VoidCallback? onTap;
+  const _MenuItem({
+    required this.icon,
+    required this.label,
+    this.count,
+    this.onTap,
+  });
 }

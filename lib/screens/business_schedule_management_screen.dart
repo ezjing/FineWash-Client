@@ -289,25 +289,26 @@ class _WeeklyScheduleDialogState extends State<_WeeklyScheduleDialog> {
   @override
   Widget build(BuildContext context) {
     return Dialog(
-      child: Container(
-        padding: const EdgeInsets.all(24),
-        constraints: const BoxConstraints(maxWidth: 400),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              '기본 근무시간 설정',
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-                color: AppColors.textPrimary,
+      child: SizedBox(
+        width: 400,
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              const Text(
+                '기본 근무시간 설정',
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.textPrimary,
+                ),
               ),
-            ),
-            const SizedBox(height: 24),
-            Expanded(
-              child: ListView(
+              const SizedBox(height: 24),
+              ListView(
                 shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
                 children: ['월', '화', '수', '목', '금', '토', '일']
                     .map(
                       (day) => _DayScheduleRow(
@@ -321,26 +322,29 @@ class _WeeklyScheduleDialogState extends State<_WeeklyScheduleDialog> {
                     )
                     .toList(),
               ),
-            ),
-            const SizedBox(height: 24),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.end,
-              children: [
-                TextButton(
-                  onPressed: () => Navigator.pop(context),
-                  child: const Text('취소'),
-                ),
-                const SizedBox(width: 8),
-                ElevatedButton(
-                  onPressed: () {
-                    widget.onSave(_schedule);
-                    Navigator.pop(context);
-                  },
-                  child: const Text('저장'),
-                ),
-              ],
-            ),
-          ],
+              const SizedBox(height: 24),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(context),
+                    child: const Text('취소'),
+                  ),
+                  const SizedBox(width: 8),
+                  ElevatedButton(
+                    onPressed: () {
+                      widget.onSave(_schedule);
+                      Navigator.pop(context);
+                    },
+                    style: ElevatedButton.styleFrom(
+                      minimumSize: const Size(80, 48),
+                    ),
+                    child: const Text('저장'),
+                  ),
+                ],
+              ),
+            ],
+          ),
         ),
       ),
     );

@@ -350,8 +350,12 @@ class BusinessService extends ChangeNotifier {
           ? _businesses
           : _businesses.where((b) => b.busMstIdx == busMstIdx).toList();
 
+      final businessesWithRooms = await _resolveBusinessesWithRooms(
+        targetBusinesses,
+      );
+
       final roomIds = <int>[];
-      for (final b in targetBusinesses) {
+      for (final b in businessesWithRooms) {
         for (final d in b.businessDetails) {
           roomIds.add(d.busDtlIdx);
         }
@@ -369,13 +373,18 @@ class BusinessService extends ChangeNotifier {
       );
 
       final merged = <ReservationModel>[];
+      final seenResvIdx = <int>{};
       for (final resp in responses) {
-        if (resp['success'] == true && resp['reservations'] is List) {
-          merged.addAll(
-            (resp['reservations'] as List)
-                .map((json) => ReservationModel.fromJson(json))
-                .toList(),
-          );
+        final reservations = resp['reservations'];
+        if (resp['success'] == true && reservations is List) {
+          for (final json in reservations) {
+            final reservation = ReservationModel.fromJson(
+              json as Map<String, dynamic>,
+            );
+            if (seenResvIdx.add(reservation.resvIdx)) {
+              merged.add(reservation);
+            }
+          }
         }
       }
 
@@ -395,6 +404,32 @@ class BusinessService extends ChangeNotifier {
       notifyListeners();
       return false;
     }
+  }
+
+  Future<List<BusinessMasterModel>> _resolveBusinessesWithRooms(
+    List<BusinessMasterModel> businesses,
+  ) async {
+    final result = <BusinessMasterModel>[];
+    for (final business in businesses) {
+      if (business.businessDetails.isNotEmpty) {
+        result.add(business);
+        continue;
+      }
+
+      final response = await _businessRepository.searchLogic3(
+        business.busMstIdx,
+      );
+      if (response['success'] == true && response['business'] != null) {
+        result.add(
+          BusinessMasterModel.fromJson(
+            response['business'] as Map<String, dynamic>,
+          ),
+        );
+      } else {
+        result.add(business);
+      }
+    }
+    return result;
   }
 
   /// 사업장(MST) 삭제 (SaveLogic6)

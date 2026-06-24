@@ -17,7 +17,83 @@ class BusinessReservationManagementScreen extends StatefulWidget {
 class _BusinessReservationManagementScreenState
     extends State<BusinessReservationManagementScreen> {
   int? _selectedBusMstIdx; // 사업장 선택(필수)
-  String _selectedStatusFilter = 'all'; // all, Y, N, C
+  String _selectedStatusFilter = 'all'; // all, pending, Y, N
+
+  bool _isPendingReservation(ReservationModel reservation) {
+    return reservation.contractYn != 'Y' && reservation.contractYn != 'N';
+  }
+
+  Future<void> _approveReservation(ReservationModel reservation) async {
+    final reservationService = context.read<ReservationService>();
+    final messenger = ScaffoldMessenger.of(context);
+
+    if (reservation.date == null ||
+        reservation.date!.isEmpty ||
+        reservation.time == null ||
+        reservation.time!.isEmpty) {
+      messenger.showSnackBar(
+        const SnackBar(
+          content: Text('예약 일정 정보가 없습니다. 상세 화면에서 승인해주세요.'),
+          backgroundColor: AppColors.warning,
+        ),
+      );
+      return;
+    }
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('예약 승인'),
+        content: Text('예약 #${reservation.resvIdx} 를 승인하시겠습니까?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('취소'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('승인'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true) return;
+
+    try {
+      final ok = await reservationService.approveReservation(
+        resvIdx: reservation.resvIdx,
+        date: reservation.date!,
+        time: reservation.time!,
+      );
+      if (ok) {
+        if (!mounted) return;
+        messenger.showSnackBar(
+          const SnackBar(
+            content: Text('예약이 승인되었습니다.'),
+            backgroundColor: AppColors.success,
+          ),
+        );
+        await _loadReservations();
+      } else {
+        if (!mounted) return;
+        messenger.showSnackBar(
+          const SnackBar(
+            content: Text('예약 승인에 실패했습니다.'),
+            backgroundColor: AppColors.error,
+          ),
+        );
+      }
+    } catch (e) {
+      if (!mounted) return;
+      messenger.showSnackBar(
+        const SnackBar(
+          content: Text('예약 승인 중 오류가 발생했습니다.'),
+          backgroundColor: AppColors.error,
+        ),
+      );
+    }
+  }
 
   Future<void> _rejectReservation(ReservationModel reservation) async {
     final reservationService = context.read<ReservationService>();
@@ -43,7 +119,9 @@ class _BusinessReservationManagementScreenState
     if (confirmed != true) return;
 
     try {
-      final ok = await reservationService.rejectReservation(reservation.resvIdx);
+      final ok = await reservationService.rejectReservation(
+        reservation.resvIdx,
+      );
       if (ok) {
         if (!mounted) return;
         messenger.showSnackBar(
@@ -110,6 +188,9 @@ class _BusinessReservationManagementScreenState
     List<ReservationModel> reservations,
   ) {
     if (_selectedStatusFilter == 'all') return reservations;
+    if (_selectedStatusFilter == 'pending') {
+      return reservations.where(_isPendingReservation).toList();
+    }
     return reservations
         .where((r) => r.contractYn == _selectedStatusFilter)
         .toList();
@@ -180,6 +261,14 @@ class _BusinessReservationManagementScreenState
                           ),
                           const SizedBox(width: 8),
                           _FilterChip(
+                            label: '대기',
+                            isSelected: _selectedStatusFilter == 'pending',
+                            onTap: () async {
+                              setState(() => _selectedStatusFilter = 'pending');
+                            },
+                          ),
+                          const SizedBox(width: 8),
+                          _FilterChip(
                             label: '승인',
                             isSelected: _selectedStatusFilter == 'Y',
                             onTap: () async {
@@ -192,14 +281,6 @@ class _BusinessReservationManagementScreenState
                             isSelected: _selectedStatusFilter == 'N',
                             onTap: () async {
                               setState(() => _selectedStatusFilter = 'N');
-                            },
-                          ),
-                          const SizedBox(width: 8),
-                          _FilterChip(
-                            label: '완료',
-                            isSelected: _selectedStatusFilter == 'C',
-                            onTap: () async {
-                              setState(() => _selectedStatusFilter = 'C');
                             },
                           ),
                         ],
@@ -269,7 +350,10 @@ class _BusinessReservationManagementScreenState
                             ),
                           ).then((_) => _loadReservations());
                         },
-                        onReject: reservation.contractYn == 'Y'
+                        onApprove: _isPendingReservation(reservation)
+                            ? () => _approveReservation(reservation)
+                            : null,
+                        onReject: _isPendingReservation(reservation)
                             ? () => _rejectReservation(reservation)
                             : null,
                       );
@@ -326,11 +410,13 @@ class _FilterChip extends StatelessWidget {
 class _ReservationCard extends StatelessWidget {
   final ReservationModel reservation;
   final VoidCallback onTap;
+  final VoidCallback? onApprove;
   final VoidCallback? onReject;
 
   const _ReservationCard({
     required this.reservation,
     required this.onTap,
+    this.onApprove,
     this.onReject,
   });
 
@@ -339,8 +425,6 @@ class _ReservationCard extends StatelessWidget {
       return '승인됨';
     } else if (reservation.contractYn == 'N') {
       return '거절됨';
-    } else if (reservation.contractYn == 'C') {
-      return '완료됨';
     } else {
       return '대기중';
     }
@@ -351,8 +435,6 @@ class _ReservationCard extends StatelessWidget {
       return AppColors.success;
     } else if (reservation.contractYn == 'N') {
       return AppColors.error;
-    } else if (reservation.contractYn == 'C') {
-      return AppColors.primary;
     } else {
       return AppColors.warning;
     }
@@ -469,21 +551,37 @@ class _ReservationCard extends StatelessWidget {
                   ],
                 ),
               ],
-              if (onReject != null) ...[
+              if (onReject != null || onApprove != null) ...[
                 const SizedBox(height: 12),
                 Row(
                   children: [
+                    Expanded(
+                      child: ElevatedButton(
+                        onPressed: onApprove,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.primary,
+                          foregroundColor: Colors.white,
+                          minimumSize: const Size(0, 44),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                        ),
+                        child: const Text('승인'),
+                      ),
+                    ),
+                    const SizedBox(width: 10),
                     Expanded(
                       child: OutlinedButton(
                         onPressed: onReject,
                         style: OutlinedButton.styleFrom(
                           foregroundColor: AppColors.error,
                           side: const BorderSide(color: AppColors.error),
+                          minimumSize: const Size(0, 44),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(10),
                           ),
                         ),
-                        child: const Text('예약 거절'),
+                        child: const Text('거절'),
                       ),
                     ),
                   ],

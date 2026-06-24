@@ -20,6 +20,7 @@ class AuthService extends ChangeNotifier {
 
   Future<bool> login(String email, String password) async {
     _isLoading = true;
+    _lastError = null;
     notifyListeners();
 
     try {
@@ -31,10 +32,16 @@ class AuthService extends ChangeNotifier {
         await ApiClient.setToken(response['token']);
       }
       _currentUser = MemberModel.fromJson(response['user']);
+      _lastError = null;
       _isLoading = false;
       notifyListeners();
       return true;
     } catch (e) {
+      final msg = e
+          .toString()
+          .replaceAll(RegExp(r'Exception:\s*', caseSensitive: false), '')
+          .trim();
+      _lastError = msg;
       _isLoading = false;
       notifyListeners();
       return false;

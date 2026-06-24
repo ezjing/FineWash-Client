@@ -7,7 +7,7 @@ class ReservationModel {
   final String? midOption; // 예약 중옵션 (내/외부)
   final String? subOption; // 예약 소옵션 (스팀, 내부먼지제거 등)
   final String? vehicleLocation; // 자동차 위치
-  final String contractYn; // 계약체결YN (Y: 승낙, N: 취소)
+  final String? contractYn; // 계약체결YN (Y: 승낙, N: 거절, null: 대기)
   final String? date; // 예약일자
   final String? time; // 예약시간
   final String? impUid; // 포트원 결제 고유번호
@@ -25,7 +25,7 @@ class ReservationModel {
     this.midOption,
     this.subOption,
     this.vehicleLocation,
-    this.contractYn = 'Y',
+    this.contractYn,
     this.date,
     this.time,
     this.impUid,
@@ -45,7 +45,7 @@ class ReservationModel {
       midOption: json['midOption'],
       subOption: json['subOption'],
       vehicleLocation: json['vehicleLocation'],
-      contractYn: json['contractYn'] ?? 'Y',
+      contractYn: json['contractYn'],
       date: json['date'],
       time: json['time'],
       impUid: json['impUid'],

@@ -27,12 +27,17 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   Future<void> _handleLogin() async {
-    if (_formKey.currentState!.validate()) {
-      final authService = Provider.of<AuthService>(context, listen: false);
-      await authService.login(
-        _emailController.text.trim(),
-        _passwordController.text,
-      );
+    if (!_formKey.currentState!.validate()) return;
+
+    final authService = Provider.of<AuthService>(context, listen: false);
+    final success = await authService.login(
+      _emailController.text.trim(),
+      _passwordController.text,
+    );
+
+    if (!success && mounted) {
+      final error = authService.lastError ?? '로그인에 실패했습니다. 다시 시도해주세요.';
+      showAppSnackBar(context, message: error, type: AppSnackBarType.error);
     }
   }
 

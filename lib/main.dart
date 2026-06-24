@@ -9,6 +9,7 @@ import 'services/business_service.dart';
 import 'services/wash_option_service.dart';
 import 'services/social_auth_service.dart';
 import 'services/address_service.dart';
+import 'services/schedule_service.dart';
 import 'screens/login_screen.dart';
 import 'screens/home_screen.dart';
 import 'screens/business_home_screen.dart';
@@ -42,6 +43,7 @@ class FineWashApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => BusinessService()),
         ChangeNotifierProvider(create: (_) => AddressService()),
         ChangeNotifierProvider(create: (_) => WashOptionService()),
+        ChangeNotifierProvider(create: (_) => ScheduleService()),
       ],
       child: MaterialApp(
         title: '출장세차',

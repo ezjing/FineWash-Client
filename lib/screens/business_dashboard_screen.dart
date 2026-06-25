@@ -1,10 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../models/business_master_model.dart';
 import '../models/reservation_model.dart';
 import '../services/business_service.dart';
 import '../utils/app_colors.dart';
+import '../utils/currency_formatter.dart';
+import '../widgets/business_location_chip_selector.dart';
+import '../widgets/dashboard_stat_card.dart';
+import '../widgets/month_navigator.dart';
+import '../widgets/simple_bar_chart.dart';
+import '../widgets/time_slot_bar.dart';
 
 class BusinessDashboardScreen extends StatefulWidget {
   const BusinessDashboardScreen({super.key});
@@ -137,27 +142,6 @@ class _BusinessDashboardScreenState extends State<BusinessDashboardScreen> {
   String _formatChange(double change) {
     final prefix = change > 0 ? '+' : '';
     return '$prefix${change.toStringAsFixed(change.abs() >= 10 ? 0 : 1)}%';
-  }
-
-  String _formatNumber(int value) {
-    return value.toString().replaceAllMapped(
-      RegExp(r'(\d)(?=(\d{3})+(?!\d))'),
-      (match) => '${match[1]},',
-    );
-  }
-
-  String _formatRevenue(int amount) {
-    if (amount >= 10000) {
-      final man = amount / 10000;
-      return man >= 10
-          ? _formatNumber(man.round())
-          : man.toStringAsFixed(1).replaceAll(RegExp(r'\.0$'), '');
-    }
-    return _formatNumber(amount);
-  }
-
-  String _revenueUnit(int amount) {
-    return amount >= 10000 ? '만원' : '원';
   }
 
   List<int> _chartData(List<ReservationModel> reservations) {
@@ -354,16 +338,17 @@ class _BusinessDashboardScreenState extends State<BusinessDashboardScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   if (_selectedPeriod == 'month') ...[
-                    _MonthSelector(
+                    MonthNavigator(
                       selectedMonth: _selectedMonth,
                       onPrevious: () => _shiftMonth(-1),
                       onNext: () => _shiftMonth(1),
-                      onPick: _pickMonth,
+                      onTitleTap: _pickMonth,
+                      variant: MonthNavigatorVariant.card,
                     ),
                     const SizedBox(height: 16),
                   ],
                   if (businesses.isNotEmpty)
-                    _LocationSelector(
+                    BusinessLocationChipSelector(
                       businesses: businesses,
                       selectedBusMstIdx: _selectedBusMstIdx,
                       onSelected: (busMstIdx) {
@@ -383,9 +368,9 @@ class _BusinessDashboardScreenState extends State<BusinessDashboardScreen> {
                   Row(
                     children: [
                       Expanded(
-                        child: _StatCard(
+                        child: DashboardStatCard(
                           title: '총 예약',
-                          value: _formatNumber(totalReservations),
+                          value: formatNumber(totalReservations),
                           unit: '건',
                           icon: Icons.calendar_today,
                           color: AppColors.primary,
@@ -401,10 +386,10 @@ class _BusinessDashboardScreenState extends State<BusinessDashboardScreen> {
                       ),
                       const SizedBox(width: 12),
                       Expanded(
-                        child: _StatCard(
+                        child: DashboardStatCard(
                           title: '총 매출',
-                          value: _formatRevenue(totalRevenue),
-                          unit: _revenueUnit(totalRevenue),
+                          value: formatCompactRevenue(totalRevenue),
+                          unit: revenueUnit(totalRevenue),
                           icon: Icons.payments,
                           color: AppColors.success,
                           change: _formatChange(
@@ -419,7 +404,7 @@ class _BusinessDashboardScreenState extends State<BusinessDashboardScreen> {
                   Row(
                     children: [
                       Expanded(
-                        child: _StatCard(
+                        child: DashboardStatCard(
                           title: '평균 예약',
                           value: avgPerDay.toStringAsFixed(1),
                           unit: '건/일',
@@ -433,9 +418,9 @@ class _BusinessDashboardScreenState extends State<BusinessDashboardScreen> {
                       ),
                       const SizedBox(width: 12),
                       Expanded(
-                        child: _StatCard(
+                        child: DashboardStatCard(
                           title: '승인 예약',
-                          value: _formatNumber(approvedCount),
+                          value: formatNumber(approvedCount),
                           unit: '건',
                           icon: Icons.check_circle_outline,
                           color: AppColors.yellow,
@@ -479,7 +464,7 @@ class _BusinessDashboardScreenState extends State<BusinessDashboardScreen> {
                             ),
                           ),
                           const SizedBox(height: 24),
-                          _SimpleBarChart(
+                          SimpleBarChart(
                             data: chartData,
                             labels: chartLabels,
                           ),
@@ -508,7 +493,7 @@ class _BusinessDashboardScreenState extends State<BusinessDashboardScreen> {
                       child: Column(
                         children: [
                           for (final slot in timeSlots) ...[
-                            _TimeSlotBar(
+                            TimeSlotBar(
                               label: slot.label,
                               count: slot.count,
                               maxCount: maxTimeSlotCount,
@@ -530,409 +515,3 @@ class _BusinessDashboardScreenState extends State<BusinessDashboardScreen> {
   }
 }
 
-class _MonthSelector extends StatelessWidget {
-  final DateTime selectedMonth;
-  final VoidCallback onPrevious;
-  final VoidCallback onNext;
-  final VoidCallback onPick;
-
-  const _MonthSelector({
-    required this.selectedMonth,
-    required this.onPrevious,
-    required this.onNext,
-    required this.onPick,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.border),
-      ),
-      child: Row(
-        children: [
-          IconButton(
-            onPressed: onPrevious,
-            icon: const Icon(Icons.chevron_left),
-            color: AppColors.textPrimary,
-          ),
-          Expanded(
-            child: InkWell(
-              onTap: onPick,
-              borderRadius: BorderRadius.circular(8),
-              child: Padding(
-                padding: const EdgeInsets.symmetric(vertical: 8),
-                child: Text(
-                  '${selectedMonth.year}년 ${selectedMonth.month}월',
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.textPrimary,
-                  ),
-                ),
-              ),
-            ),
-          ),
-          IconButton(
-            onPressed: onNext,
-            icon: const Icon(Icons.chevron_right),
-            color: AppColors.textPrimary,
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _LocationSelector extends StatelessWidget {
-  final List<BusinessMasterModel> businesses;
-  final int? selectedBusMstIdx;
-  final ValueChanged<int?> onSelected;
-
-  const _LocationSelector({
-    required this.businesses,
-    required this.selectedBusMstIdx,
-    required this.onSelected,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.border),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            '사업장 선택',
-            style: TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w600,
-              color: AppColors.textPrimary,
-            ),
-          ),
-          const SizedBox(height: 12),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: [
-              _LocationChip(
-                label: '전체',
-                isSelected: selectedBusMstIdx == null,
-                onTap: () => onSelected(null),
-              ),
-              ...businesses.map(
-                (business) => _LocationChip(
-                  label: business.companyName ?? '사업장 #${business.busMstIdx}',
-                  isSelected: selectedBusMstIdx == business.busMstIdx,
-                  onTap: () => onSelected(business.busMstIdx),
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _LocationChip extends StatelessWidget {
-  final String label;
-  final bool isSelected;
-  final VoidCallback onTap;
-
-  const _LocationChip({
-    required this.label,
-    required this.isSelected,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        decoration: BoxDecoration(
-          color: isSelected ? AppColors.primary : Colors.white,
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(
-            color: isSelected ? AppColors.primary : AppColors.border,
-          ),
-        ),
-        child: Text(
-          label,
-          style: TextStyle(
-            color: isSelected ? Colors.white : AppColors.textPrimary,
-            fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
-            fontSize: 14,
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _StatCard extends StatelessWidget {
-  final String title;
-  final String value;
-  final String unit;
-  final IconData icon;
-  final Color color;
-  final String change;
-  final bool isPositive;
-
-  const _StatCard({
-    required this.title,
-    required this.value,
-    required this.unit,
-    required this.icon,
-    required this.color,
-    required this.change,
-    required this.isPositive,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Card(
-      elevation: 0,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-        side: const BorderSide(color: AppColors.border),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Icon(icon, color: color, size: 24),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 4,
-                  ),
-                  decoration: BoxDecoration(
-                    color: (isPositive ? AppColors.success : AppColors.error)
-                        .withAlpha((0.1 * 255).round()),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Text(
-                    change,
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                      color: isPositive ? AppColors.success : AppColors.error,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            Text(
-              title,
-              style: const TextStyle(
-                fontSize: 12,
-                color: AppColors.textSecondary,
-              ),
-            ),
-            const SizedBox(height: 4),
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                Flexible(
-                  child: Text(
-                    value,
-                    style: TextStyle(
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
-                      color: color,
-                    ),
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-                const SizedBox(width: 4),
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 4),
-                  child: Text(
-                    unit,
-                    style: const TextStyle(
-                      fontSize: 14,
-                      color: AppColors.textSecondary,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _SimpleBarChart extends StatelessWidget {
-  final List<int> data;
-  final List<String> labels;
-
-  const _SimpleBarChart({
-    required this.data,
-    required this.labels,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    if (data.isEmpty) {
-      return const SizedBox(
-        height: 200,
-        child: Center(
-          child: Text(
-            '예약 데이터가 없습니다',
-            style: TextStyle(color: AppColors.textSecondary),
-          ),
-        ),
-      );
-    }
-
-    final maxValue = data.reduce((a, b) => a > b ? a : b).toDouble();
-    final safeMax = maxValue == 0 ? 1.0 : maxValue;
-
-    return SizedBox(
-      height: 200,
-      child: LayoutBuilder(
-        builder: (context, constraints) {
-          const xAxisHeight = 28.0;
-          const countLabelHeight = 14.0;
-          const gap = 4.0;
-          final maxBarHeight =
-              constraints.maxHeight - xAxisHeight - countLabelHeight - gap;
-
-          return Column(
-            children: [
-              SizedBox(
-                height: constraints.maxHeight - xAxisHeight,
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: List.generate(data.length, (index) {
-                    final barHeight = (data[index] / safeMax) * maxBarHeight;
-                    return Expanded(
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 4),
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.end,
-                          children: [
-                            if (data[index] > 0)
-                              Text(
-                                '${data[index]}',
-                                style: const TextStyle(
-                                  fontSize: 10,
-                                  color: AppColors.textSecondary,
-                                ),
-                              ),
-                            const SizedBox(height: gap),
-                            Container(
-                              width: double.infinity,
-                              height: barHeight,
-                              decoration: BoxDecoration(
-                                color: AppColors.primary,
-                                borderRadius: const BorderRadius.vertical(
-                                  top: Radius.circular(4),
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    );
-                  }),
-                ),
-              ),
-              const SizedBox(height: 8),
-              Row(
-                children: List.generate(data.length, (index) {
-                  return Expanded(
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 4),
-                      child: Text(
-                        index < labels.length ? labels[index] : '',
-                        style: const TextStyle(
-                          fontSize: 10,
-                          color: AppColors.textSecondary,
-                        ),
-                        textAlign: TextAlign.center,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                  );
-                }),
-              ),
-            ],
-          );
-        },
-      ),
-    );
-  }
-}
-
-class _TimeSlotBar extends StatelessWidget {
-  final String label;
-  final int count;
-  final int maxCount;
-
-  const _TimeSlotBar({
-    required this.label,
-    required this.count,
-    required this.maxCount,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final value = maxCount == 0 ? 0.0 : count / maxCount;
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(
-              label,
-              style: const TextStyle(
-                fontSize: 14,
-                color: AppColors.textPrimary,
-              ),
-            ),
-            Text(
-              '$count건',
-              style: const TextStyle(
-                fontSize: 12,
-                color: AppColors.textSecondary,
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 8),
-        ClipRRect(
-          borderRadius: BorderRadius.circular(4),
-          child: LinearProgressIndicator(
-            value: value,
-            minHeight: 8,
-            backgroundColor: AppColors.surfaceVariant,
-            valueColor: const AlwaysStoppedAnimation<Color>(AppColors.primary),
-          ),
-        ),
-      ],
-    );
-  }
-}

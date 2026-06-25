@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 
 import '../services/business_service.dart';
 import '../utils/app_snackbar.dart';
+import '../utils/date_format_util.dart';
 
 class BusinessRoomRegisterScreen extends StatefulWidget {
   final int busMstIdx;
@@ -70,14 +71,8 @@ class _BusinessRoomRegisterScreenState
       lastDate: lastDate ?? DateTime(2100, 12, 31),
     );
     if (picked == null) return;
-    controller.text = _formatYmd(picked);
+    controller.text = DateFormatUtil.toDateKey(picked);
     setState(() {});
-  }
-
-  static String _formatYmd(DateTime date) {
-    final mm = date.month.toString().padLeft(2, '0');
-    final dd = date.day.toString().padLeft(2, '0');
-    return '${date.year}-$mm-$dd';
   }
 
   static DateTime? _tryParseYmd(String value) {

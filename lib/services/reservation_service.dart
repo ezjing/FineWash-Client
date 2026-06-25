@@ -40,6 +40,7 @@ class ReservationService extends ChangeNotifier {
   // 예약 생성 (SaveLogic1 - 출장세차)
   Future<bool> saveLogic1({
     required int vehicleId,
+    required int busMstIdx,
     required String mainOption,
     String? midOption,
     String? subOption,
@@ -55,6 +56,7 @@ class ReservationService extends ChangeNotifier {
     try {
       final requestData = {
         'vehicleId': vehicleId,
+        'bus_mst_idx': busMstIdx,
         'main_option': mainOption,
         'mid_option': midOption,
         'sub_option': subOption,

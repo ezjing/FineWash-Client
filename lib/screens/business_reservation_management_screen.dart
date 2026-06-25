@@ -4,6 +4,7 @@ import '../models/reservation_model.dart';
 import '../services/business_service.dart';
 import '../services/reservation_service.dart';
 import '../utils/app_colors.dart';
+import '../widgets/filter_chip_button.dart';
 import 'business_reservation_detail_screen.dart';
 
 class BusinessReservationManagementScreen extends StatefulWidget {
@@ -252,7 +253,7 @@ class _BusinessReservationManagementScreenState
                       scrollDirection: Axis.horizontal,
                       child: Row(
                         children: [
-                          _FilterChip(
+                          FilterChipButton(
                             label: '전체',
                             isSelected: _selectedStatusFilter == 'all',
                             onTap: () async {
@@ -260,7 +261,7 @@ class _BusinessReservationManagementScreenState
                             },
                           ),
                           const SizedBox(width: 8),
-                          _FilterChip(
+                          FilterChipButton(
                             label: '대기',
                             isSelected: _selectedStatusFilter == 'pending',
                             onTap: () async {
@@ -268,7 +269,7 @@ class _BusinessReservationManagementScreenState
                             },
                           ),
                           const SizedBox(width: 8),
-                          _FilterChip(
+                          FilterChipButton(
                             label: '승인',
                             isSelected: _selectedStatusFilter == 'Y',
                             onTap: () async {
@@ -276,7 +277,7 @@ class _BusinessReservationManagementScreenState
                             },
                           ),
                           const SizedBox(width: 8),
-                          _FilterChip(
+                          FilterChipButton(
                             label: '거절',
                             isSelected: _selectedStatusFilter == 'N',
                             onTap: () async {
@@ -370,43 +371,6 @@ class _BusinessReservationManagementScreenState
   }
 }
 
-class _FilterChip extends StatelessWidget {
-  final String label;
-  final bool isSelected;
-  final VoidCallback onTap;
-
-  const _FilterChip({
-    required this.label,
-    required this.isSelected,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        decoration: BoxDecoration(
-          color: isSelected ? AppColors.primary : Colors.transparent,
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(
-            color: isSelected ? AppColors.primary : AppColors.border,
-          ),
-        ),
-        child: Text(
-          label,
-          style: TextStyle(
-            color: isSelected ? Colors.white : AppColors.textPrimary,
-            fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
-            fontSize: 14,
-          ),
-        ),
-      ),
-    );
-  }
-}
-
 class _ReservationCard extends StatelessWidget {
   final ReservationModel reservation;
   final VoidCallback onTap;
@@ -422,11 +386,11 @@ class _ReservationCard extends StatelessWidget {
 
   String _getStatusText() {
     if (reservation.contractYn == 'Y') {
-      return '승인됨';
+      return '승인';
     } else if (reservation.contractYn == 'N') {
-      return '거절됨';
+      return '거절';
     } else {
-      return '대기중';
+      return '대기';
     }
   }
 

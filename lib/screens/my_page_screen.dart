@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../models/reservation_model.dart';
 import '../services/auth_service.dart';
 import '../services/reservation_service.dart';
 import '../services/vehicle_service.dart';
 import 'reservation_history_screen.dart';
 import 'vehicle_management_screen.dart';
 import '../utils/app_colors.dart';
+import '../widgets/customer_reservation_list_item.dart';
 
 class MyPageScreen extends StatefulWidget {
   const MyPageScreen({super.key});
@@ -137,8 +137,10 @@ class _MyPageScreenState extends State<MyPageScreen> {
                     ),
                     const SizedBox(height: 16),
                     ...reservationService.getRecentReservations().map(
-                      (reservation) =>
-                          _ReservationCard(reservation: reservation),
+                      (reservation) => CustomerReservationListItem(
+                        reservation: reservation,
+                        compact: true,
+                      ),
                     ),
                   ],
                 ),
@@ -272,68 +274,6 @@ class _StatItem extends StatelessWidget {
       ],
     ),
   );
-}
-
-class _ReservationCard extends StatelessWidget {
-  final ReservationModel reservation;
-  const _ReservationCard({required this.reservation});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        border: Border.all(color: AppColors.border),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                reservation.mainOption ?? '예약',
-                style: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.textPrimary,
-                ),
-              ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(
-                  color: _getStatusColor().withAlpha((0.1 * 255).round()),
-                  borderRadius: BorderRadius.circular(4),
-                ),
-                child: Text(
-                  reservation.isConfirmed ? '확정' : '취소',
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                    color: _getStatusColor(),
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          Text(
-            '${reservation.date ?? ''} ${reservation.time ?? ''}',
-            style: const TextStyle(
-              fontSize: 14,
-              color: AppColors.textSecondary,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Color _getStatusColor() {
-    return reservation.isConfirmed ? AppColors.success : AppColors.error;
-  }
 }
 
 class _MenuSection extends StatelessWidget {

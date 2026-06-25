@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../services/business_service.dart';
 import '../utils/app_snackbar.dart';
+import '../widgets/business_location_basic_form.dart';
 import 'address_search_screen.dart';
 
 class BusinessLocationRegisterScreen extends StatefulWidget {
@@ -198,7 +199,28 @@ class _BusinessLocationRegisterScreenState
             padding: const EdgeInsets.all(16),
             child: Column(
               children: [
-                _buildBasicInfoForm(),
+                BusinessLocationBasicForm(
+                  formKey: _formKey,
+                  nameController: _nameController,
+                  businessNumberController: _businessNumberController,
+                  addressController: _addressController,
+                  addressDetailController: _addressDetailController,
+                  phoneController: _phoneController,
+                  emailController: _emailController,
+                  depositAmountController: _depositAmountController,
+                  remarkController: _remarkController,
+                  isLoading: _isLoading,
+                  depositYn: _depositYn,
+                  businessType: _businessType,
+                  latitude: _latitude,
+                  longitude: _longitude,
+                  onAddressSearch: _openAddressSearch,
+                  onSave: _saveLocation,
+                  onDepositYnChanged: (value) =>
+                      setState(() => _depositYn = value),
+                  onBusinessTypeChanged: (value) =>
+                      setState(() => _businessType = value),
+                ),
                 const SizedBox(height: 20),
                 FilledButton(
                   onPressed: _isLoading ? null : _saveLocation,
@@ -219,191 +241,6 @@ class _BusinessLocationRegisterScreenState
               color: Colors.black26,
               child: const Center(child: CircularProgressIndicator()),
             ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildBasicInfoForm() {
-    return Form(
-      key: _formKey,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          TextFormField(
-            controller: _nameController,
-            decoration: const InputDecoration(
-              labelText: '사업장명',
-              hintText: '사업장명을 입력하세요',
-              prefixIcon: Icon(Icons.business),
-            ),
-            validator: (value) {
-              if (value == null || value.isEmpty) {
-                return '사업장명을 입력해주세요';
-              }
-              return null;
-            },
-          ),
-          const SizedBox(height: 16),
-          TextFormField(
-            controller: _businessNumberController,
-            decoration: const InputDecoration(
-              labelText: '사업자 번호',
-              hintText: '000-00-00000',
-              prefixIcon: Icon(Icons.badge),
-            ),
-            keyboardType: TextInputType.number,
-            validator: (value) {
-              if (value == null || value.isEmpty) {
-                return '사업자 번호를 입력해주세요';
-              }
-              final digitsOnly = value.replaceAll(RegExp(r'[^0-9]'), '');
-              if (digitsOnly.length != 10) {
-                return '사업자 번호 10자리를 입력해주세요';
-              }
-              return null;
-            },
-          ),
-          const SizedBox(height: 16),
-          DropdownButtonFormField<String>(
-            initialValue: _businessType,
-            decoration: const InputDecoration(
-              labelText: '사업장 종류',
-              prefixIcon: Icon(Icons.category),
-            ),
-            items: const [
-              DropdownMenuItem(value: 'OUT', child: Text('출장')),
-              DropdownMenuItem(value: 'PARTNER', child: Text('제휴')),
-            ],
-            onChanged: _isLoading
-                ? null
-                : (value) => setState(() => _businessType = value),
-            validator: (value) {
-              if (value == null || value.isEmpty) {
-                return '사업장 종류를 선택해주세요';
-              }
-              return null;
-            },
-          ),
-          const SizedBox(height: 16),
-          TextFormField(
-            controller: _addressController,
-            readOnly: true,
-            onTap: _openAddressSearch,
-            decoration: InputDecoration(
-              labelText: '주소',
-              hintText: '주소를 검색하세요',
-              prefixIcon: const Icon(Icons.location_on),
-              suffixIcon: const Icon(Icons.search),
-            ),
-            validator: (value) {
-              if (value == null || value.isEmpty) {
-                return '주소를 입력해주세요';
-              }
-              if (_latitude == null || _longitude == null) {
-                return '주소 검색 후 선택해주세요 (위도/경도 필요)';
-              }
-              return null;
-            },
-          ),
-          if (_latitude != null && _longitude != null) ...[
-            const SizedBox(height: 8),
-            Text(
-              '위도: ${_latitude!.toStringAsFixed(6)}, 경도: ${_longitude!.toStringAsFixed(6)}',
-              style: Theme.of(context).textTheme.bodySmall,
-            ),
-          ],
-          const SizedBox(height: 16),
-          TextFormField(
-            controller: _addressDetailController,
-            decoration: const InputDecoration(
-              labelText: '상세주소',
-              hintText: '상세주소를 입력하세요',
-              prefixIcon: Icon(Icons.home),
-            ),
-          ),
-          const SizedBox(height: 16),
-          TextFormField(
-            controller: _phoneController,
-            decoration: const InputDecoration(
-              labelText: '전화번호',
-              hintText: '02-1234-5678',
-              prefixIcon: Icon(Icons.phone),
-            ),
-            keyboardType: TextInputType.phone,
-            textInputAction: TextInputAction.next,
-            validator: (value) {
-              if (value == null || value.isEmpty) {
-                return '전화번호를 입력해주세요';
-              }
-              return null;
-            },
-          ),
-          const SizedBox(height: 16),
-          TextFormField(
-            controller: _emailController,
-            decoration: const InputDecoration(
-              labelText: '이메일',
-              hintText: 'example@domain.com',
-              prefixIcon: Icon(Icons.email),
-            ),
-            keyboardType: TextInputType.emailAddress,
-            textInputAction: TextInputAction.next,
-            validator: (value) {
-              if (value == null || value.trim().isEmpty) return null;
-              final v = value.trim();
-              final ok = RegExp(r'^[^\s@]+@[^\s@]+\.[^\s@]+$').hasMatch(v);
-              if (!ok) return '이메일 형식이 올바르지 않습니다';
-              return null;
-            },
-          ),
-          const SizedBox(height: 16),
-          SwitchListTile(
-            contentPadding: EdgeInsets.zero,
-            title: const Text('예약금 사용'),
-            subtitle: const Text('예약금 Y/N'),
-            value: _depositYn,
-            onChanged: _isLoading
-                ? null
-                : (value) {
-                    setState(() {
-                      _depositYn = value;
-                      if (!value) _depositAmountController.text = '';
-                    });
-                  },
-          ),
-          const SizedBox(height: 8),
-          TextFormField(
-            controller: _depositAmountController,
-            decoration: const InputDecoration(
-              labelText: '예약금',
-              hintText: '0',
-              prefixIcon: Icon(Icons.payments),
-            ),
-            enabled: _depositYn && !_isLoading,
-            keyboardType: TextInputType.number,
-            textInputAction: TextInputAction.next,
-            validator: (value) {
-              if (!_depositYn) return null;
-              final v = value?.trim() ?? '';
-              if (v.isEmpty) return '예약금을 입력해주세요';
-              final amount = int.tryParse(v);
-              if (amount == null || amount < 0) return '예약금은 0 이상의 숫자여야 합니다';
-              return null;
-            },
-          ),
-          const SizedBox(height: 16),
-          TextFormField(
-            controller: _remarkController,
-            decoration: const InputDecoration(
-              labelText: '비고',
-              hintText: '비고를 입력하세요',
-              prefixIcon: Icon(Icons.notes),
-            ),
-            maxLines: 3,
-            textInputAction: TextInputAction.done,
-            onFieldSubmitted: (_) => _saveLocation(),
-          ),
         ],
       ),
     );

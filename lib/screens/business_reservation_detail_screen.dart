@@ -3,6 +3,9 @@ import 'package:provider/provider.dart';
 import '../models/reservation_model.dart';
 import '../services/reservation_service.dart';
 import '../utils/app_colors.dart';
+import '../utils/date_format_util.dart';
+import '../utils/time_picker_util.dart';
+import '../widgets/datetime_selector_tile.dart';
 
 class BusinessReservationDetailScreen extends StatefulWidget {
   final ReservationModel reservation;
@@ -146,35 +149,19 @@ class _BusinessReservationDetailScreenState
 
     if (picked != null) {
       setState(() {
-        _selectedDate = picked.toIso8601String().split('T')[0];
+        _selectedDate = DateFormatUtil.toDateKey(picked);
       });
     }
   }
 
   Future<void> _selectTime() async {
-    final now = DateTime.now();
-    TimeOfDay initialTime = TimeOfDay.now();
-
-    if (_selectedTime.isNotEmpty) {
-      final parts = _selectedTime.split(':');
-      if (parts.length == 2) {
-        initialTime = TimeOfDay(
-          hour: int.tryParse(parts[0]) ?? now.hour,
-          minute: int.tryParse(parts[1]) ?? now.minute,
-        );
-      }
-    }
-
-    final picked = await showTimePicker(
-      context: context,
-      initialTime: initialTime,
+    final picked = await TimePickerUtil.pickTime(
+      context,
+      currentTime: _selectedTime.isEmpty ? null : _selectedTime,
     );
 
     if (picked != null) {
-      setState(() {
-        _selectedTime =
-            '${picked.hour.toString().padLeft(2, '0')}:${picked.minute.toString().padLeft(2, '0')}';
-      });
+      setState(() => _selectedTime = picked);
     }
   }
 
@@ -221,18 +208,24 @@ class _BusinessReservationDetailScreenState
                           ),
                           decoration: BoxDecoration(
                             color: isPending
-                                ? AppColors.warning.withAlpha((0.1 * 255).round())
+                                ? AppColors.warning.withAlpha(
+                                    (0.1 * 255).round(),
+                                  )
                                 : reservation.contractYn == 'Y'
-                                ? AppColors.success.withAlpha((0.1 * 255).round())
-                                : AppColors.error.withAlpha((0.1 * 255).round()),
+                                ? AppColors.success.withAlpha(
+                                    (0.1 * 255).round(),
+                                  )
+                                : AppColors.error.withAlpha(
+                                    (0.1 * 255).round(),
+                                  ),
                             borderRadius: BorderRadius.circular(12),
                           ),
                           child: Text(
                             isPending
-                                ? '대기중'
+                                ? '대기'
                                 : reservation.contractYn == 'Y'
-                                ? '승인됨'
-                                : '거절됨',
+                                ? '승인'
+                                : '거절',
                             style: TextStyle(
                               fontSize: 12,
                               fontWeight: FontWeight.w600,
@@ -288,7 +281,7 @@ class _BusinessReservationDetailScreenState
               ),
             ),
             const SizedBox(height: 24),
-            // 일정 조정 섹션 (대기중인 경우만)
+            // 일정 조정 섹션 (대기인 경우만)
             if (isPending) ...[
               const Text(
                 '상세 일정 조정',
@@ -309,14 +302,14 @@ class _BusinessReservationDetailScreenState
                   padding: const EdgeInsets.all(16),
                   child: Column(
                     children: [
-                      _DateTimeSelector(
+                      DateTimeSelectorTile(
                         label: '예약 날짜',
                         value: _selectedDate.isEmpty ? '날짜 선택' : _selectedDate,
                         icon: Icons.calendar_today,
                         onTap: _selectDate,
                       ),
                       const SizedBox(height: 16),
-                      _DateTimeSelector(
+                      DateTimeSelectorTile(
                         label: '예약 시간',
                         value: _selectedTime.isEmpty ? '시간 선택' : _selectedTime,
                         icon: Icons.access_time,
@@ -439,67 +432,6 @@ class _InfoRow extends StatelessWidget {
           ),
         ),
       ],
-    );
-  }
-}
-
-class _DateTimeSelector extends StatelessWidget {
-  final String label;
-  final String value;
-  final IconData icon;
-  final VoidCallback onTap;
-
-  const _DateTimeSelector({
-    required this.label,
-    required this.value,
-    required this.icon,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(12),
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          border: Border.all(color: AppColors.border),
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: Row(
-          children: [
-            Icon(icon, color: AppColors.textSecondary),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    label,
-                    style: const TextStyle(
-                      fontSize: 12,
-                      color: AppColors.textSecondary,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    value,
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w500,
-                      color: value.contains('선택')
-                          ? AppColors.textTertiary
-                          : AppColors.textPrimary,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            Icon(Icons.chevron_right, color: AppColors.textTertiary),
-          ],
-        ),
-      ),
     );
   }
 }

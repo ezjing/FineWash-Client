@@ -5,6 +5,9 @@ import '../models/schedule_detail_model.dart';
 import '../services/schedule_service.dart';
 import '../utils/app_colors.dart';
 import '../utils/app_snackbar.dart';
+import '../utils/time_picker_util.dart';
+import '../widgets/section_card.dart';
+import '../widgets/time_selector_field.dart';
 
 class BusinessScheduleEventScreen extends StatefulWidget {
   final DateTime selectedDate;
@@ -29,6 +32,8 @@ class BusinessScheduleEventScreen extends StatefulWidget {
 
 class _BusinessScheduleEventScreenState
     extends State<BusinessScheduleEventScreen> {
+  static const _timePlaceholder = '시간 선택';
+
   String? _eventType;
   String? _startTime;
   String? _endTime;
@@ -38,15 +43,16 @@ class _BusinessScheduleEventScreenState
   void initState() {
     super.initState();
     final detail = widget.existingDetail;
-    if (detail != null) {
-      if (detail.isVacation) {
-        _eventType = 'vacation';
-      } else {
-        _eventType = 'overtime';
-        _startTime = detail.startTime;
-        _endTime = detail.endTime;
-      }
+    if (detail == null) return;
+
+    if (detail.isVacation) {
+      _eventType = 'vacation';
+      return;
     }
+
+    _eventType = 'overtime';
+    _startTime = detail.startTime;
+    _endTime = detail.endTime;
   }
 
   @override
@@ -70,114 +76,59 @@ class _BusinessScheduleEventScreenState
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Card(
-              elevation: 0,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-                side: const BorderSide(color: AppColors.border),
-              ),
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      '이벤트 유형 선택',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                        color: AppColors.textPrimary,
-                      ),
+            SectionCard(
+              title: '이벤트 유형 선택',
+              child: Row(
+                children: [
+                  Expanded(
+                    child: _EventTypeCard(
+                      icon: Icons.beach_access,
+                      title: '연차',
+                      accentColor: AppColors.purple,
+                      isSelected: _eventType == 'vacation',
+                      onTap: _selectVacation,
                     ),
-                    const SizedBox(height: 16),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: _EventTypeCard(
-                            icon: Icons.beach_access,
-                            title: '연차',
-                            accentColor: AppColors.purple,
-                            isSelected: _eventType == 'vacation',
-                            onTap: () {
-                              setState(() {
-                                _eventType = 'vacation';
-                                _startTime = null;
-                                _endTime = null;
-                              });
-                            },
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: _EventTypeCard(
-                            icon: Icons.schedule,
-                            title: '연장근무',
-                            accentColor: AppColors.orange,
-                            isSelected: _eventType == 'overtime',
-                            onTap: () {
-                              setState(() {
-                                _eventType = 'overtime';
-                                _startTime =
-                                    widget.defaultEndTime ??
-                                    widget.defaultStartTime ??
-                                    '18:00';
-                                _endTime = '20:00';
-                              });
-                            },
-                          ),
-                        ),
-                      ],
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: _EventTypeCard(
+                      icon: Icons.schedule,
+                      title: '연장근무',
+                      accentColor: AppColors.orange,
+                      isSelected: _eventType == 'overtime',
+                      onTap: _selectOvertime,
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
             ),
             if (_eventType == 'overtime') ...[
               const SizedBox(height: 16),
-              Card(
-                elevation: 0,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  side: const BorderSide(color: AppColors.border),
-                ),
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        '연장근무 시간',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                          color: AppColors.textPrimary,
-                        ),
+              SectionCard(
+                title: '연장근무 시간',
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: TimeSelectorField(
+                        label: '시작 시간',
+                        value: _startTime ?? _timePlaceholder,
+                        placeholder: _timePlaceholder,
+                        onTap: () => _selectTime(isStart: true),
                       ),
-                      const SizedBox(height: 16),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: _TimeSelector(
-                              label: '시작 시간',
-                              value: _startTime ?? '시간 선택',
-                              onTap: () => _selectTime(true),
-                            ),
-                          ),
-                          const Padding(
-                            padding: EdgeInsets.symmetric(horizontal: 8),
-                            child: Text('~'),
-                          ),
-                          Expanded(
-                            child: _TimeSelector(
-                              label: '종료 시간',
-                              value: _endTime ?? '시간 선택',
-                              onTap: () => _selectTime(false),
-                            ),
-                          ),
-                        ],
+                    ),
+                    const Padding(
+                      padding: EdgeInsets.symmetric(horizontal: 8),
+                      child: Text('~'),
+                    ),
+                    Expanded(
+                      child: TimeSelectorField(
+                        label: '종료 시간',
+                        value: _endTime ?? _timePlaceholder,
+                        placeholder: _timePlaceholder,
+                        onTap: () => _selectTime(isStart: false),
                       ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
               ),
             ],
@@ -208,36 +159,38 @@ class _BusinessScheduleEventScreenState
     );
   }
 
-  Future<void> _selectTime(bool isStart) async {
-    final currentTime = isStart ? _startTime : _endTime;
-    TimeOfDay initialTime = TimeOfDay.now();
+  void _selectVacation() {
+    setState(() {
+      _eventType = 'vacation';
+      _startTime = null;
+      _endTime = null;
+    });
+  }
 
-    if (currentTime != null) {
-      final parts = currentTime.split(':');
-      if (parts.length == 2) {
-        initialTime = TimeOfDay(
-          hour: int.tryParse(parts[0]) ?? 18,
-          minute: int.tryParse(parts[1]) ?? 0,
-        );
-      }
-    }
+  void _selectOvertime() {
+    setState(() {
+      _eventType = 'overtime';
+      _startTime =
+          widget.defaultEndTime ?? widget.defaultStartTime ?? '18:00';
+      _endTime = '20:00';
+    });
+  }
 
-    final picked = await showTimePicker(
-      context: context,
-      initialTime: initialTime,
+  Future<void> _selectTime({required bool isStart}) async {
+    final picked = await TimePickerUtil.pickTime(
+      context,
+      currentTime: isStart ? _startTime : _endTime,
+      fallback: const TimeOfDay(hour: 18, minute: 0),
     );
+    if (picked == null) return;
 
-    if (picked != null) {
-      setState(() {
-        final timeStr =
-            '${picked.hour.toString().padLeft(2, '0')}:${picked.minute.toString().padLeft(2, '0')}';
-        if (isStart) {
-          _startTime = timeStr;
-        } else {
-          _endTime = timeStr;
-        }
-      });
-    }
+    setState(() {
+      if (isStart) {
+        _startTime = picked;
+      } else {
+        _endTime = picked;
+      }
+    });
   }
 
   Future<void> _saveEvent() async {
@@ -251,7 +204,7 @@ class _BusinessScheduleEventScreenState
     }
 
     if (_eventType == 'overtime' &&
-        _startTime!.compareTo(_endTime!) >= 0) {
+        !TimePickerUtil.isEndAfterStart(_startTime!, _endTime!)) {
       showAppSnackBar(
         context,
         message: '종료 시간은 시작 시간보다 늦어야 합니다.',
@@ -340,6 +293,7 @@ class _BusinessScheduleEventScreenState
   }
 }
 
+/// 이벤트 유형 카드 — 선택 상태만 props로 받아 부분 재빌드 가능
 class _EventTypeCard extends StatelessWidget {
   final IconData icon;
   final String title;
@@ -386,56 +340,6 @@ class _EventTypeCard extends StatelessWidget {
                 fontSize: 14,
                 fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
                 color: isSelected ? accentColor : AppColors.textPrimary,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _TimeSelector extends StatelessWidget {
-  final String label;
-  final String value;
-  final VoidCallback onTap;
-
-  const _TimeSelector({
-    required this.label,
-    required this.value,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(8),
-      child: Container(
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          border: Border.all(color: AppColors.border),
-          borderRadius: BorderRadius.circular(8),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              label,
-              style: const TextStyle(
-                fontSize: 12,
-                color: AppColors.textSecondary,
-              ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              value,
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w500,
-                color: value.contains('선택')
-                    ? AppColors.textTertiary
-                    : AppColors.textPrimary,
               ),
             ),
           ],

@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import '../models/schedule_detail_model.dart';
 import '../models/schedule_master_model.dart';
 import '../repositories/schedule_repository.dart';
+import '../utils/date_format_util.dart';
 
 class ScheduleService extends ChangeNotifier {
   final ScheduleRepository _repository = ScheduleRepository();
@@ -18,18 +19,11 @@ class ScheduleService extends ChangeNotifier {
   String? get lastError => _lastError;
 
   ScheduleDetailModel? detailForDate(DateTime date) {
-    final key = _dateKey(date);
+    final key = DateFormatUtil.toDateKey(date);
     for (final detail in _scheduleDetails) {
       if (detail.scheduleDate == key) return detail;
     }
     return null;
-  }
-
-  String _dateKey(DateTime date) {
-    final y = date.year.toString().padLeft(4, '0');
-    final m = date.month.toString().padLeft(2, '0');
-    final d = date.day.toString().padLeft(2, '0');
-    return '$y-$m-$d';
   }
 
   Future<bool> loadScheduleMaster(int busMstIdx) async {
@@ -148,7 +142,7 @@ class ScheduleService extends ChangeNotifier {
     try {
       final body = {
         'schMstIdx': schMstIdx,
-        'scheduleDate': _dateKey(date),
+        'scheduleDate': DateFormatUtil.toDateKey(date),
         'holidayYn': isVacation ? 'Y' : 'N',
         if (!isVacation) 'startTime': startTime,
         if (!isVacation) 'endTime': endTime,

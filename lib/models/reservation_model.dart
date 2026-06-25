@@ -38,7 +38,7 @@ class ReservationModel {
   factory ReservationModel.fromJson(Map<String, dynamic> json) {
     return ReservationModel(
       resvIdx: json['resvIdx'] ?? 0,
-      busMstIdx: json['busMstIdx'],
+      busMstIdx: json['busMstIdx'] ?? json['bus_mst_idx'],
       memIdx: json['memIdx'],
       vehIdx: json['vehIdx'],
       mainOption: json['mainOption'],
@@ -82,5 +82,16 @@ class ReservationModel {
   }
 
   bool get isConfirmed => contractYn == 'Y';
-  bool get isCancelled => contractYn == 'N';
+  bool get isRejected => contractYn == 'N';
+  bool get isPending => !isConfirmed && !isRejected;
+
+  /// null=대기, Y=승인, N=거절
+  String get statusLabel {
+    if (isConfirmed) return '승인';
+    if (isRejected) return '거절';
+    return '대기';
+  }
+
+  /// 제휴(방문) 예약 여부 — busMstIdx만으로는 출장·제휴 구분 불가
+  bool get isAffiliateReservation => mainOption == '방문';
 }

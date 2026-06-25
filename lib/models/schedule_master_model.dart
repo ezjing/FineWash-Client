@@ -1,4 +1,6 @@
 class ScheduleMasterModel {
+  static const koreanDayLabels = ['월', '화', '수', '목', '금', '토', '일'];
+
   final int schMstIdx;
   final int busMstIdx;
   final bool mondayYn;
@@ -80,5 +82,26 @@ class ScheduleMasterModel {
       DateTime.sunday => sundayYn,
       _ => false,
     };
+  }
+
+  Map<String, bool> toWorkDaysMap() => {
+    '월': mondayYn,
+    '화': tuesdayYn,
+    '수': wednesdayYn,
+    '목': thursdayYn,
+    '금': fridayYn,
+    '토': saturdayYn,
+    '일': sundayYn,
+  };
+
+  /// 다이얼로그 초기값용 — master 없으면 평일 근무 기본값
+  static Map<String, bool> workDaysFrom(ScheduleMasterModel? master) {
+    if (master == null) {
+      return {
+        for (final day in koreanDayLabels)
+          day: day != '토' && day != '일',
+      };
+    }
+    return master.toWorkDaysMap();
   }
 }

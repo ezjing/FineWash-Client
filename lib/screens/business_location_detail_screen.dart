@@ -6,8 +6,8 @@ import '../models/wash_option_detail_model.dart';
 import '../models/wash_option_master_model.dart';
 import '../services/business_service.dart';
 import '../services/wash_option_service.dart';
-import '../widgets/entity_summary_cards.dart';
-import '../widgets/empty_state_message.dart';
+import '../widgets/business_room_tab_content.dart';
+import '../widgets/wash_option_tab_content.dart';
 import 'business_room_register_screen.dart';
 import 'wash_option_detail_register_screen.dart';
 import 'wash_option_master_register_screen.dart';
@@ -284,84 +284,19 @@ class _BusinessLocationDetailScreenState
       body: TabBarView(
         controller: _tabController,
         children: [
-          _buildLocationRoomManagementTab(),
-          _buildOptionManagementTab(),
+          BusinessRoomTabContent(
+            onEditTap: _openRoomEdit,
+            onDeleteTap: _confirmDeleteRoom,
+          ),
+          WashOptionTabContent(
+            onEditMaster: _openWashMasterEdit,
+            onDeleteMaster: _confirmDeleteWashMaster,
+            onAddDetail: _openWashDetailAdd,
+            onEditDetail: _openWashDetailEdit,
+            onDeleteDetail: _confirmDeleteWashDetail,
+          ),
         ],
       ),
-    );
-  }
-
-  /// 두 번째 탭: WashOption MST/DTL CRUD
-  Widget _buildOptionManagementTab() {
-    final bottom = MediaQuery.paddingOf(context).bottom;
-    return Consumer<WashOptionService>(
-      builder: (context, washService, _) {
-        if (washService.isLoading && washService.masters.isEmpty) {
-          return const Center(child: CircularProgressIndicator());
-        }
-        final masters = washService.masters;
-        if (masters.isEmpty) {
-          return EmptyStateMessage(
-            icon: Icons.tune_outlined,
-            title: '등록된 세차 옵션(MST)이 없습니다',
-            subtitle: '앱바 + 로 MST를 추가한 뒤, 카드에서 DTL을 추가할 수 있습니다.',
-            padding: EdgeInsets.fromLTRB(24, 0, 24, bottom + 24),
-          );
-        }
-        return ListView.builder(
-          padding: EdgeInsets.fromLTRB(16, 16, 16, 16 + bottom),
-          itemCount: masters.length,
-          itemBuilder: (context, index) {
-            final m = masters[index];
-            return WashOptionMasterCard(
-              master: m,
-              onEditMaster: () => _openWashMasterEdit(m),
-              onDeleteMaster: () => _confirmDeleteWashMaster(m),
-              onAddDetail: () => _openWashDetailAdd(m),
-              onEditDetail: (d) => _openWashDetailEdit(d),
-              onDeleteDetail: (d) => _confirmDeleteWashDetail(d),
-            );
-          },
-        );
-      },
-    );
-  }
-
-  /// 사업장 마스터 기준 첫 번째 탭: 기본 정보 + 룸 목록
-  Widget _buildLocationRoomManagementTab() {
-    final bottom = MediaQuery.paddingOf(context).bottom;
-    return Consumer<BusinessService>(
-      builder: (context, businessService, _) {
-        if (businessService.isLoading &&
-            businessService.currentBusiness == null) {
-          return const Center(child: CircularProgressIndicator());
-        }
-        final business = businessService.currentBusiness;
-        if (business == null) {
-          return const Center(child: Text('사업장 정보를 찾을 수 없습니다.'));
-        }
-        final details = business.businessDetails;
-        if (details.isEmpty) {
-          return EmptyStateMessage(
-            icon: Icons.meeting_room_outlined,
-            title: '등록된 룸이 없습니다',
-            subtitle: '앱바의 + 버튼으로 룸을 추가하세요.',
-            padding: EdgeInsets.fromLTRB(24, 0, 24, bottom + 24),
-          );
-        }
-        return ListView.builder(
-          padding: EdgeInsets.fromLTRB(16, 16, 16, 16 + bottom),
-          itemCount: details.length,
-          itemBuilder: (context, index) {
-            final detail = details[index];
-            return BusinessRoomSummaryCard(
-              room: detail,
-              onEditTap: (_) => _openRoomEdit(detail),
-              onDeleteTap: (_) => _confirmDeleteRoom(detail),
-            );
-          },
-        );
-      },
     );
   }
 }
